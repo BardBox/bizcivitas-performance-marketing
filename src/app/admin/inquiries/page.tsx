@@ -11,9 +11,17 @@ import {
   Search,
   X,
   Eye,
+  Clock,
+  Activity,
 } from "lucide-react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+interface ActivityLogEntry {
+  event: string;
+  scoreAdded: number;
+  timestamp: string;
+}
 
 interface Inquiry {
   _id: string;
@@ -31,6 +39,7 @@ interface Inquiry {
   engagementScore?: number;
   pipelineStage?: string;
   lastActivity?: string;
+  activityLog?: ActivityLogEntry[];
   notes?: string;
   utm_source?: string;
   utm_medium?: string;
@@ -68,6 +77,8 @@ export default function InquiriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewInquiry, setViewInquiry] = useState<Inquiry | null>(null);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState("");
 
   const fetchInquiries = useCallback(async () => {
@@ -178,6 +189,27 @@ export default function InquiriesPage() {
     } catch (err) {
       console.error("Failed to update notes:", err);
     }
+  };
+
+  const fetchActivityLog = async (inquiryId: string) => {
+    setLoadingActivity(true);
+    setActivityLog([]);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/pm/engagement/${inquiryId}`);
+      const data = await res.json();
+      if (data.statusCode === 200 && data.data?.activityLog) {
+        setActivityLog(data.data.activityLog);
+      }
+    } catch (err) {
+      console.error("Failed to fetch activity log:", err);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  const handleViewInquiry = (inquiry: Inquiry) => {
+    setViewInquiry(inquiry);
+    fetchActivityLog(inquiry._id);
   };
 
   const toggleSelectAll = () => {
@@ -413,7 +445,7 @@ export default function InquiriesPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => setViewInquiry(inquiry)}
+                          onClick={() => handleViewInquiry(inquiry)}
                           className="p-1.5 text-gray-400 hover:text-[#f97316] hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
                           title="View details"
                         >
@@ -464,7 +496,7 @@ export default function InquiriesPage() {
       {/* Detail Modal */}
       {viewInquiry && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl">
             <div className="bg-[#1a1a2e] rounded-t-2xl px-6 py-4 flex items-center justify-between">
               <h3 className="text-white font-semibold">Inquiry Details</h3>
               <button
@@ -496,7 +528,10 @@ export default function InquiriesPage() {
               <div className="pt-3 border-t border-gray-100 flex items-center gap-4">
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Engagement Score</p>
-                  <div className="mt-1"><ScoreBadge score={viewInquiry.engagementScore || 0} /></div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-2xl font-bold text-[#f97316]">{viewInquiry.engagementScore || 0}</span>
+                    <ScoreBadge score={viewInquiry.engagementScore || 0} />
+                  </div>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Pipeline Stage</p>
@@ -506,6 +541,81 @@ export default function InquiriesPage() {
                   <div>
                     <p className="text-xs text-gray-400 uppercase tracking-wide">Last Activity</p>
                     <p className="text-sm text-[#1a1a2e] font-medium mt-0.5">{viewInquiry.lastActivity.replace(/_/g, " ")}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Activity Timeline */}
+              <div className="pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Activity className="w-4 h-4 text-[#f97316]" />
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Activity Timeline</p>
+                </div>
+
+                {loadingActivity ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#f97316]" />
+                  </div>
+                ) : activityLog.length === 0 ? (
+                  <div className="text-center py-6 text-gray-400 text-sm">
+                    No activity tracked yet
+                  </div>
+                ) : (
+                  <div className="relative ml-3">
+                    {/* Timeline line */}
+                    <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-gray-200" />
+
+                    <div className="space-y-0">
+                      {[...activityLog].reverse().map((entry, idx) => {
+                        const runningScore = activityLog
+                          .slice(0, activityLog.length - idx)
+                          .reduce((sum, e) => sum + (e.scoreAdded || 0), 0);
+
+                        return (
+                          <div key={idx} className="relative pl-6 py-2 group">
+                            {/* Timeline dot */}
+                            <div className={`absolute left-[-4px] top-3.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                              entry.scoreAdded >= 15 ? "bg-red-500" :
+                              entry.scoreAdded >= 8 ? "bg-orange-500" :
+                              entry.scoreAdded >= 5 ? "bg-yellow-500" :
+                              "bg-gray-400"
+                            }`} />
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-[#1a1a2e] capitalize">
+                                  {eventLabel(entry.event)}
+                                </span>
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                                  entry.scoreAdded >= 15 ? "bg-red-100 text-red-700" :
+                                  entry.scoreAdded >= 8 ? "bg-orange-100 text-orange-700" :
+                                  entry.scoreAdded >= 5 ? "bg-yellow-100 text-yellow-700" :
+                                  "bg-gray-100 text-gray-600"
+                                }`}>
+                                  +{entry.scoreAdded}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-semibold text-gray-400 tabular-nums">
+                                = {runningScore} pts
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3 text-gray-300" />
+                              <span className="text-[10px] text-gray-400">
+                                {new Date(entry.timestamp).toLocaleString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  second: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -546,6 +656,24 @@ export default function InquiriesPage() {
       )}
     </div>
   );
+}
+
+const EVENT_LABELS: Record<string, string> = {
+  page_visit: "Page Visit",
+  return_visit: "Return Visit",
+  time_30sec: "Stayed 30 seconds",
+  time_2min: "Stayed 2 minutes",
+  scroll_50: "Scrolled 50%+",
+  cta_click: "CTA Click",
+  form_started: "Form Started",
+  form_submitted: "Form Submitted",
+  file_download: "File Download",
+  pricing_visit: "Pricing Page Visit",
+  multiple_pages: "5+ Pages Visited",
+};
+
+function eventLabel(key: string): string {
+  return EVENT_LABELS[key] || key.replace(/_/g, " ");
 }
 
 function DetailRow({ label, value }: { label: string; value?: string }) {
