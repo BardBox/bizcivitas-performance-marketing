@@ -6,10 +6,12 @@ import Membership from "@/components/Membership";
 import WhyBizcivitas from "@/components/WhyBizcivitas";
 import Footer from "@/components/Footer";
 import OfferModal from "@/components/OfferModal";
+import EngagementTracker from "@/components/EngagementTracker";
 
 export default function Home() {
   return (
     <main className="min-h-screen">
+      <EngagementTracker />
       <Hero />
       <StrugglingWith />
       <StopWaiting />

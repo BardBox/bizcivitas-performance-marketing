@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizCivitas - Engagement Scoring & Lead Pipeline System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1a1a2e;
+    line-height: 1.6;
+    background: #fff;
+    font-size: 11pt;
+  }
+
+  /* Cover Page */
+  .cover {
+    height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -40%;
+    left: -20%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .cover-content { position: relative; z-index: 1; }
+  .cover h1 {
+    font-size: 36pt;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  .cover h1 span { color: #f97316; }
+  .cover h2 {
+    font-size: 18pt;
+    font-weight: 300;
+    color: #94a3b8;
+    margin-bottom: 40px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    margin-top: 30px;
+  }
+  .cover-meta-item {
+    text-align: center;
+  }
+  .cover-meta-item .label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  .cover-meta-item .value {
+    font-size: 11pt;
+    font-weight: 500;
+    color: #e2e8f0;
+  }
+  .cover-divider {
+    width: 60px;
+    height: 3px;
+    background: #f97316;
+    margin: 30px auto;
+    border-radius: 2px;
+  }
+  .cover-badge {
+    display: inline-block;
+    background: rgba(249,115,22,0.15);
+    border: 1px solid rgba(249,115,22,0.3);
+    color: #f97316;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 6px 20px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* Page Layout */
+  .page {
+    padding: 50px 60px;
+    page-break-after: always;
+    min-height: 100vh;
+  }
+  .page:last-child { page-break-after: avoid; }
+
+  /* Section Headers */
+  .section-num {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #f97316;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+  }
+  h2 {
+    font-size: 22pt;
+    font-weight: 800;
+    color: #1a1a2e;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  h3 {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 25px 0 10px;
+  }
+  h4 {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #475569;
+    margin: 15px 0 8px;
+  }
+  .section-subtitle {
+    font-size: 11pt;
+    color: #64748b;
+    margin-bottom: 30px;
+  }
+  .section-divider {
+    width: 40px;
+    height: 3px;
+    background: #f97316;
+    margin: 8px 0 20px;
+    border-radius: 2px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 10pt;
+  }
+  table thead th {
+    background: #1a1a2e;
+    color: white;
+    font-weight: 600;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  table thead th:first-child { border-radius: 8px 0 0 0; }
+  table thead th:last-child { border-radius: 0 8px 0 0; }
+  table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  table tbody tr:last-child td { border-bottom: none; }
+  table tbody tr:nth-child(even) { background: #f8fafc; }
+
+  /* Code Blocks */
+  .code-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 18px 22px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 9pt;
+    line-height: 1.7;
+    margin: 12px 0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-block .comment { color: #64748b; }
+  .code-block .keyword { color: #c084fc; }
+  .code-block .string { color: #34d399; }
+  .code-block .number { color: #f97316; }
+  .code-block .function { color: #60a5fa; }
+
+  /* Info Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 15px 0;
+  }
+  .card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card-title {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 9pt;
+    color: #64748b;
+  }
+  .card-score {
+    display: inline-block;
+    background: #fff7ed;
+    color: #f97316;
+    font-weight: 700;
+    font-size: 12pt;
+    padding: 2px 10px;
+    border-radius: 6px;
+    border: 1px solid #fed7aa;
+    margin-top: 6px;
+  }
+
+  /* Pipeline Visual */
+  .pipeline-bar {
+    display: flex;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 44px;
+    margin: 15px 0;
+    border: 1px solid #e2e8f0;
+  }
+  .pipeline-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .stage-new { background: #dbeafe; color: #1d4ed8; width: 14%; }
+  .stage-cold { background: #cffafe; color: #0891b2; width: 19%; }
+  .stage-warm { background: #ffedd5; color: #ea580c; width: 30%; }
+  .stage-hot { background: #fee2e2; color: #dc2626; width: 22%; }
+  .stage-converted { background: #dcfce7; color: #16a34a; width: 15%; }
+
+  /* Flow Diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 15px 0;
+  }
+  .flow-step {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 9pt;
+    font-weight: 500;
+    color: #475569;
+  }
+  .flow-step strong {
+    color: #f97316;
+  }
+  .flow-arrow {
+    color: #cbd5e1;
+    font-size: 14pt;
+    font-weight: 300;
+  }
+  .flow-result {
+    background: #1a1a2e;
+    color: white;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 10pt;
+    font-weight: 700;
+  }
+
+  /* Highlight Box */
+  .highlight-box {
+    background: linear-gradient(135deg, #fff7ed, #fffbeb);
+    border-left: 4px solid #f97316;
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    margin: 15px 0;
+  }
+  .highlight-box p {
+    font-size: 10pt;
+    color: #92400e;
+  }
+  .highlight-box strong { color: #1a1a2e; }
+
+  /* Info Box */
+  .info-box {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    margin: 15px 0;
+  }
+  .info-box p { font-size: 10pt; color: #1e40af; }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-system { background: #e2e8f0; color: #475569; }
+  .badge-custom { background: #fff7ed; color: #f97316; border: 1px solid #fed7aa; }
+  .badge-new { background: #dbeafe; color: #1d4ed8; }
+  .badge-cold { background: #cffafe; color: #0891b2; }
+  .badge-warm { background: #ffedd5; color: #ea580c; }
+  .badge-hot { background: #fee2e2; color: #dc2626; }
+  .badge-converted { background: #dcfce7; color: #16a34a; }
+
+  /* Bullet Lists */
+  ul, ol { margin: 10px 0 10px 24px; }
+  li { margin-bottom: 5px; font-size: 10pt; color: #334155; }
+
+  p { font-size: 10pt; color: #475569; margin-bottom: 10px; }
+
+  /* API Endpoint Row */
+  .api-method {
+    display: inline-block;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+  .method-get { background: #dcfce7; color: #16a34a; }
+  .method-post { background: #dbeafe; color: #2563eb; }
+  .method-patch { background: #fff7ed; color: #ea580c; }
+  .method-delete { background: #fee2e2; color: #dc2626; }
+  .api-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9pt;
+    color: #1a1a2e;
+    font-weight: 500;
+  }
+
+  /* Footer */
+  .page-footer {
+    position: fixed;
+    bottom: 20px;
+    left: 60px;
+    right: 60px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8pt;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 10px;
+  }
+
+  /* JSON Block */
+  .json-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 18px 22px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9pt;
+    line-height: 1.7;
+    margin: 12px 0;
+    white-space: pre;
+  }
+  .json-key { color: #60a5fa; }
+  .json-string { color: #34d399; }
+  .json-number { color: #f97316; }
+  .json-bool { color: #c084fc; }
+
+  /* Architecture Diagram */
+  .arch-box {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 10px 0;
+    position: relative;
+  }
+  .arch-box-title {
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: white;
+    padding: 0 8px;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #f97316;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { page-break-after: always; }
+    .cover { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER PAGE ==================== -->
+<div class="cover">
+  <div class="cover-content">
+    <div class="cover-badge">Technical Documentation</div>
+    <h1>Engagement Scoring &<br><span>Lead Pipeline</span> System</h1>
+    <h2>BizCivitas Performance Marketing</h2>
+    <div class="cover-divider"></div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <div class="label">Version</div>
+        <div class="value">1.0</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Date</div>
+        <div class="value">March 16, 2026</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Platform</div>
+        <div class="value">Next.js + Express + MongoDB</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Status</div>
+        <div class="value">Production Ready</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="page">
+  <div class="section-num">Contents</div>
+  <h2>Table of Contents</h2>
+  <div class="section-divider"></div>
+
+  <table style="border: none;">
+    <tbody>
+      <tr><td style="border:none; padding:8px 0;"><strong>01</strong>&nbsp;&nbsp; System Overview</td><td style="border:none; text-align:right; color:#94a3b8;">Goals, Architecture, Tech Stack</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>02</strong>&nbsp;&nbsp; Pipeline Stages</td><td style="border:none; text-align:right; color:#94a3b8;">New → Cold → Warm → Hot → Converted</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>03</strong>&nbsp;&nbsp; Engagement Scoring Model</td><td style="border:none; text-align:right; color:#94a3b8;">Events, Scores, Categories</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>04</strong>&nbsp;&nbsp; Database Structure</td><td style="border:none; text-align:right; color:#94a3b8;">PmScoringConfig, PmInquiry, Activity Log</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>05</strong>&nbsp;&nbsp; Frontend Tracking</td><td style="border:none; text-align:right; color:#94a3b8;">Hook, Events, SessionStorage</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>06</strong>&nbsp;&nbsp; Backend Processing</td><td style="border:none; text-align:right; color:#94a3b8;">Controllers, Score Calculation, Pipeline Assignment</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>07</strong>&nbsp;&nbsp; Complete Data Flow</td><td style="border:none; text-align:right; color:#94a3b8;">End-to-End Journey</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>08</strong>&nbsp;&nbsp; API Reference</td><td style="border:none; text-align:right; color:#94a3b8;">All Endpoints</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>09</strong>&nbsp;&nbsp; Admin Panel</td><td style="border:none; text-align:right; color:#94a3b8;">Scoring Configuration Page</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>10</strong>&nbsp;&nbsp; Score Decay & Maintenance</td><td style="border:none; text-align:right; color:#94a3b8;">Inactive Lead Handling</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>11</strong>&nbsp;&nbsp; Example Scenarios</td><td style="border:none; text-align:right; color:#94a3b8;">User Journeys</td></tr>
+      <tr><td style="border:none; padding:8px 0;"><strong>12</strong>&nbsp;&nbsp; File Structure</td><td style="border:none; text-align:right; color:#94a3b8;">All Files Created/Modified</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 1: OVERVIEW ==================== -->
+<div class="page">
+  <div class="section-num">Section 01</div>
+  <h2>System Overview</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">An automated lead intelligence system that tracks visitor behavior and assigns pipeline stages dynamically.</p>
+
+  <h3>What It Does</h3>
+  <p>This system tracks <strong>user engagement on the BizCivitas performance marketing website</strong> and dynamically assigns an <strong>engagement score</strong> based on user behavior. Based on the score, users are automatically categorized into a pipeline stage.</p>
+
+  <div class="highlight-box">
+    <p><strong>Key Principle:</strong> The "Converted" stage is determined by <strong>payment/membership data</strong>, not by engagement score. Payment always overrides score-based stages.</p>
+  </div>
+
+  <h3>System Goals</h3>
+  <ul>
+    <li>Track user engagement across the website in real-time</li>
+    <li>Assign scores based on user actions (page visits, scroll depth, form interactions, etc.)</li>
+    <li>Automatically update lead pipeline stage based on accumulated score</li>
+    <li>Identify highly interested users before they convert</li>
+    <li>Detect converted users via Razorpay payment records</li>
+    <li>Allow admin to customize scoring values and pipeline thresholds</li>
+    <li>Support custom event categories added by admin</li>
+    <li>Maintain real-time engagement analytics in admin panel</li>
+  </ul>
+
+  <h3>Tech Stack</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title">Frontend</div>
+      <div class="card-desc">Next.js 14 (App Router), TypeScript, Tailwind CSS, Lucide Icons</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Backend</div>
+      <div class="card-desc">Express.js, MongoDB (Mongoose ODM), Node.js</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Payment</div>
+      <div class="card-desc">Razorpay (order creation, checkout, signature verification)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Admin</div>
+      <div class="card-desc">Next.js admin panel with JWT httpOnly cookie auth</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2: PIPELINE STAGES ==================== -->
+<div class="page">
+  <div class="section-num">Section 02</div>
+  <h2>Pipeline Stages</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Users automatically flow through 5 stages based on their engagement score.</p>
+
+  <div class="pipeline-bar">
+    <div class="pipeline-stage stage-new">NEW</div>
+    <div class="pipeline-stage stage-cold">COLD</div>
+    <div class="pipeline-stage stage-warm">WARM</div>
+    <div class="pipeline-stage stage-hot">HOT</div>
+    <div class="pipeline-stage stage-converted">CONVERTED</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Stage</th>
+        <th>Score Range</th>
+        <th>Description</th>
+        <th>Trigger</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-new">New</span></td>
+        <td>0 &ndash; 10</td>
+        <td>First interaction with the platform</td>
+        <td>Automatic (default stage)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-cold">Cold</span></td>
+        <td>11 &ndash; 25</td>
+        <td>Low engagement visitor, browsing</td>
+        <td>Score crosses cold threshold</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-warm">Warm</span></td>
+        <td>26 &ndash; 50</td>
+        <td>Interested visitor, exploring content</td>
+        <td>Score crosses warm threshold</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-hot">Hot</span></td>
+        <td>51+</td>
+        <td>Highly engaged potential lead</td>
+        <td>Score crosses hot threshold</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-converted">Converted</span></td>
+        <td>Payment detected</td>
+        <td>User has purchased membership</td>
+        <td>Razorpay payment verified</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box">
+    <p><strong>Important Rule:</strong> Converted users override ALL engagement scores. Once payment is verified, the pipeline stage becomes "Converted" regardless of the score value.</p>
+  </div>
+
+  <h3>Pipeline Assignment Logic</h3>
+  <div class="code-block"><span class="keyword">function</span> <span class="function">getPipelineStage</span>(score, isConverted) {
+  <span class="keyword">if</span> (isConverted) <span class="keyword">return</span> <span class="string">"converted"</span>;
+
+  <span class="keyword">const</span> thresholds = <span class="keyword">await</span> <span class="function">getThresholdsFromDB</span>();  <span class="comment">// { cold: 11, warm: 26, hot: 51 }</span>
+
+  <span class="keyword">if</span> (score < thresholds.cold)  <span class="keyword">return</span> <span class="string">"new"</span>;    <span class="comment">// 0-10</span>
+  <span class="keyword">if</span> (score < thresholds.warm)  <span class="keyword">return</span> <span class="string">"cold"</span>;   <span class="comment">// 11-25</span>
+  <span class="keyword">if</span> (score < thresholds.hot)   <span class="keyword">return</span> <span class="string">"warm"</span>;   <span class="comment">// 26-50</span>
+  <span class="keyword">return</span> <span class="string">"hot"</span>;                                  <span class="comment">// 51+</span>
+}</div>
+
+  <div class="info-box">
+    <p><strong>Thresholds are configurable</strong> from the admin panel at <code>/admin/scoring</code>. The values (11, 26, 51) are defaults that can be adjusted per business needs.</p>
+  </div>
+</div>
+
+<!-- ==================== SECTION 3: SCORING MODEL ==================== -->
+<div class="page">
+  <div class="section-num">Section 03</div>
+  <h2>Engagement Scoring Model</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">User engagement is measured through behavioral events, each assigned a point value.</p>
+
+  <h3>System Events <span class="badge badge-system">Built-in</span></h3>
+  <p>These 11 events are tracked automatically by the frontend. Their scores can be adjusted but they cannot be deleted.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>Key</th>
+        <th>Score</th>
+        <th>How It's Triggered</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Page Visit</strong></td><td><code>page_visit</code></td><td><span class="card-score">+2</span></td><td>Every page the user loads</td></tr>
+      <tr><td><strong>Return Visit</strong></td><td><code>return_visit</code></td><td><span class="card-score">+5</span></td><td>User returns (localStorage check)</td></tr>
+      <tr><td><strong>Stay 30 seconds</strong></td><td><code>time_30sec</code></td><td><span class="card-score">+3</span></td><td>Timer fires after 30s on page</td></tr>
+      <tr><td><strong>Stay 2 minutes</strong></td><td><code>time_2min</code></td><td><span class="card-score">+8</span></td><td>Timer fires after 120s on page</td></tr>
+      <tr><td><strong>Scroll 50%</strong></td><td><code>scroll_50</code></td><td><span class="card-score">+3</span></td><td>Scroll listener detects 50%+ depth</td></tr>
+      <tr><td><strong>CTA Click</strong></td><td><code>cta_click</code></td><td><span class="card-score">+5</span></td><td>User clicks a call-to-action button</td></tr>
+      <tr><td><strong>Form Started</strong></td><td><code>form_started</code></td><td><span class="card-score">+8</span></td><td>First focus on any form input</td></tr>
+      <tr><td><strong>Form Submitted</strong></td><td><code>form_submitted</code></td><td><span class="card-score">+20</span></td><td>Inquiry form submit</td></tr>
+      <tr><td><strong>File Download</strong></td><td><code>file_download</code></td><td><span class="card-score">+10</span></td><td>User downloads a brochure/file</td></tr>
+      <tr><td><strong>Pricing Page</strong></td><td><code>pricing_visit</code></td><td><span class="card-score">+15</span></td><td>User visits /checkout or pricing page</td></tr>
+      <tr><td><strong>5+ Pages Visited</strong></td><td><code>multiple_pages</code></td><td><span class="card-score">+10</span></td><td>Unique page count exceeds 5</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Custom Events <span class="badge badge-custom">Admin Created</span></h3>
+  <p>Admins can create additional scoring events from the admin panel. Custom events have the same structure but can be fully edited and deleted.</p>
+
+  <div class="info-box">
+    <p><strong>Example custom events:</strong> "Video Watched" (+12), "Testimonial Clicked" (+7), "Brochure Downloaded" (+10), "Chat Initiated" (+8)</p>
+  </div>
+</div>
+
+<!-- ==================== SECTION 4: DATABASE STRUCTURE ==================== -->
+<div class="page">
+  <div class="section-num">Section 04</div>
+  <h2>Database Structure</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">MongoDB collections that power the engagement scoring system.</p>
+
+  <h3>1. PmScoringConfig Collection <span style="color:#94a3b8; font-weight:400; font-size:10pt;">(Singleton &mdash; 1 document)</span></h3>
+  <p>Stores all scoring configuration. Only one document exists in this collection.</p>
+
+  <div class="json-block">{
+  <span class="json-key">"events"</span>: [
+    {
+      <span class="json-key">"_id"</span>: <span class="json-string">"ObjectId"</span>,
+      <span class="json-key">"key"</span>: <span class="json-string">"page_visit"</span>,
+      <span class="json-key">"label"</span>: <span class="json-string">"Page Visit"</span>,
+      <span class="json-key">"description"</span>: <span class="json-string">"Each page the user visits"</span>,
+      <span class="json-key">"score"</span>: <span class="json-number">2</span>,
+      <span class="json-key">"icon"</span>: <span class="json-string">"Eye"</span>,
+      <span class="json-key">"isSystem"</span>: <span class="json-bool">true</span>,
+      <span class="json-key">"isActive"</span>: <span class="json-bool">true</span>
+    },
+    <span class="comment">// ... 11 system events + any custom events</span>
+  ],
+  <span class="json-key">"thresholds"</span>: { <span class="json-key">"cold"</span>: <span class="json-number">11</span>, <span class="json-key">"warm"</span>: <span class="json-number">26</span>, <span class="json-key">"hot"</span>: <span class="json-number">51</span> },
+  <span class="json-key">"decay"</span>: {
+    <span class="json-key">"enabled"</span>: <span class="json-bool">true</span>,
+    <span class="json-key">"inactiveDays"</span>: <span class="json-number">30</span>,
+    <span class="json-key">"decayAmount"</span>: <span class="json-number">10</span>
+  }
+}</div>
+
+  <h3>2. PmInquiry Collection <span style="color:#94a3b8; font-weight:400; font-size:10pt;">(Per Lead)</span></h3>
+  <p>Each inquiry/lead has engagement tracking fields alongside their contact information.</p>
+
+  <div class="json-block">{
+  <span class="json-key">"fullName"</span>: <span class="json-string">"John Doe"</span>,
+  <span class="json-key">"email"</span>: <span class="json-string">"john@email.com"</span>,
+  <span class="json-key">"phone"</span>: <span class="json-string">"9876543210"</span>,
+  <span class="json-key">"companyName"</span>: <span class="json-string">"Acme Corp"</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"warm"</span>,
+  <span class="json-key">"engagementScore"</span>: <span class="json-number">38</span>,
+  <span class="json-key">"pipelineStage"</span>: <span class="json-string">"warm"</span>,
+  <span class="json-key">"lastActivity"</span>: <span class="json-string">"form_submitted"</span>,
+  <span class="json-key">"activityLog"</span>: [
+    { <span class="json-key">"event"</span>: <span class="json-string">"page_visit"</span>, <span class="json-key">"scoreAdded"</span>: <span class="json-number">2</span>, <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-16T10:00:00Z"</span> },
+    { <span class="json-key">"event"</span>: <span class="json-string">"time_2min"</span>, <span class="json-key">"scoreAdded"</span>: <span class="json-number">8</span>, <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-16T10:02:00Z"</span> },
+    { <span class="json-key">"event"</span>: <span class="json-string">"pricing_visit"</span>, <span class="json-key">"scoreAdded"</span>: <span class="json-number">15</span>, <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-16T10:03:00Z"</span> },
+    { <span class="json-key">"event"</span>: <span class="json-string">"form_submitted"</span>, <span class="json-key">"scoreAdded"</span>: <span class="json-number">20</span>, <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-16T10:05:00Z"</span> }
+  ]
+}</div>
+</div>
+
+<!-- ==================== SECTION 5: FRONTEND TRACKING ==================== -->
+<div class="page">
+  <div class="section-num">Section 05</div>
+  <h2>Frontend Tracking</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">How user behavior is captured on the website before and after inquiry creation.</p>
+
+  <h3>Tracking Hook: <code>useEngagementTracker</code></h3>
+  <p>A React hook that automatically tracks all user behavior. It runs on every page and stores events in <code>sessionStorage</code> until the inquiry is created.</p>
+
+  <h4>Auto-Tracked Events (no code needed per page)</h4>
+  <div class="card-grid">
+    <div class="card"><div class="card-title">Page Visit</div><div class="card-desc">Fires on every page load</div></div>
+    <div class="card"><div class="card-title">Return Visit</div><div class="card-desc">Checks localStorage for prior visit</div></div>
+    <div class="card"><div class="card-title">Time on Page</div><div class="card-desc">Interval checks at 30s and 2min</div></div>
+    <div class="card"><div class="card-title">Scroll Depth</div><div class="card-desc">Scroll listener for 50%+ depth</div></div>
+    <div class="card"><div class="card-title">Pricing Visit</div><div class="card-desc">Detects /checkout or /pricing URLs</div></div>
+    <div class="card"><div class="card-title">Multiple Pages</div><div class="card-desc">Tracks unique page count > 5</div></div>
+  </div>
+
+  <h4>Interaction-Triggered Events</h4>
+  <table>
+    <thead><tr><th>Event</th><th>Where It's Tracked</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td><code>cta_click</code></td><td>Any CTA button</td><td><code>trackEvent("cta_click")</code></td></tr>
+      <tr><td><code>form_started</code></td><td>InquiryModal</td><td><code>onFocus</code> on form (first time only)</td></tr>
+      <tr><td><code>form_submitted</code></td><td>InquiryModal</td><td>After successful form submit</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Storage Strategy</h3>
+  <div class="highlight-box">
+    <p><strong>Before inquiry exists:</strong> All events are stored in <code>sessionStorage</code> as an array. No API calls are made to avoid creating orphan data.</p>
+    <p style="margin-top:8px"><strong>After form submit:</strong> The <code>syncEventsToInquiry(inquiryId)</code> function sends ALL accumulated events to the backend in a single batch API call. Then sessionStorage is cleared.</p>
+  </div>
+
+  <h3>Session ID</h3>
+  <p>A unique session ID is generated per browser session and stored in <code>sessionStorage</code>. Format: <code>ses_1710590400000_a7b3c9d</code></p>
+</div>
+
+<!-- ==================== SECTION 6: BACKEND PROCESSING ==================== -->
+<div class="page">
+  <div class="section-num">Section 06</div>
+  <h2>Backend Processing</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">How the backend receives events, calculates scores, and assigns pipeline stages.</p>
+
+  <h3>Score Calculation</h3>
+  <p>The backend reads scoring values from the <code>PmScoringConfig</code> collection (not hardcoded). This allows admin to change scores without code deployment.</p>
+
+  <div class="code-block"><span class="comment">// Build score map from DB config</span>
+<span class="keyword">const</span> <span class="function">getScoreMap</span> = <span class="keyword">async</span> () => {
+  <span class="keyword">const</span> config = <span class="keyword">await</span> PmScoringConfig.<span class="function">findOne</span>();
+  <span class="keyword">const</span> map = {};
+  <span class="keyword">for</span> (<span class="keyword">const</span> e <span class="keyword">of</span> config.events) {
+    <span class="keyword">if</span> (e.isActive) map[e.key] = e.score;
+  }
+  <span class="keyword">return</span> map;  <span class="comment">// { page_visit: 2, return_visit: 5, ... }</span>
+};</div>
+
+  <h3>Sync Process (POST /engagement/sync)</h3>
+  <ol>
+    <li>Receive <code>inquiryId</code> + <code>events[]</code> array from frontend</li>
+    <li>Fetch <code>PmScoringConfig</code> from DB to get current score values</li>
+    <li>Loop through each event, look up score from config</li>
+    <li>Add each event to <code>inquiry.activityLog</code></li>
+    <li>Accumulate <code>inquiry.engagementScore</code></li>
+    <li>Calculate pipeline stage using thresholds from DB</li>
+    <li>Auto-update <code>inquiry.status</code> to match pipeline stage</li>
+    <li>Save inquiry document</li>
+  </ol>
+
+  <h3>Status Auto-Update Rules</h3>
+  <table>
+    <thead><tr><th>Current Status</th><th>New Pipeline Stage</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td>new</td><td>cold / warm / hot</td><td>Status updates to match</td></tr>
+      <tr><td>contacted</td><td>any</td><td>No auto-update (manual override)</td></tr>
+      <tr><td>converted</td><td>any</td><td>Never downgraded</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 7: COMPLETE FLOW ==================== -->
+<div class="page">
+  <div class="section-num">Section 07</div>
+  <h2>Complete Data Flow</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">End-to-end journey from user's first visit to conversion.</p>
+
+  <h3>Step-by-Step Flow</h3>
+
+  <div style="margin: 15px 0;">
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="width:28px;height:28px;background:#f97316;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10pt;font-weight:700;flex-shrink:0;">1</div>
+      <div><strong>User visits landing page</strong><br><span style="color:#64748b;font-size:9pt;">EngagementTracker hook activates. Tracks page_visit (+2). Checks for return visit. Starts time and scroll listeners.</span></div>
+    </div>
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="width:28px;height:28px;background:#f97316;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10pt;font-weight:700;flex-shrink:0;">2</div>
+      <div><strong>User browses and engages</strong><br><span style="color:#64748b;font-size:9pt;">Events accumulate in sessionStorage: time_30sec (+3), scroll_50 (+3), time_2min (+8). Score builds up locally.</span></div>
+    </div>
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="width:28px;height:28px;background:#f97316;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10pt;font-weight:700;flex-shrink:0;">3</div>
+      <div><strong>User opens inquiry form</strong><br><span style="color:#64748b;font-size:9pt;">form_started (+8) tracked on first input focus. Events still in sessionStorage only.</span></div>
+    </div>
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="width:28px;height:28px;background:#f97316;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10pt;font-weight:700;flex-shrink:0;">4</div>
+      <div><strong>User submits form</strong><br><span style="color:#64748b;font-size:9pt;">POST /inquiry/add creates PmInquiry. form_submitted (+20) added. syncEventsToInquiry() sends ALL events to backend. Score calculated, pipeline assigned.</span></div>
+    </div>
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="width:28px;height:28px;background:#f97316;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10pt;font-weight:700;flex-shrink:0;">5</div>
+      <div><strong>Redirect to checkout</strong><br><span style="color:#64748b;font-size:9pt;">pricing_visit (+15) tracked on checkout page. Score updates via real-time track API.</span></div>
+    </div>
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="width:28px;height:28px;background:#16a34a;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10pt;font-weight:700;flex-shrink:0;">6</div>
+      <div><strong>User completes payment</strong><br><span style="color:#64748b;font-size:9pt;">Razorpay payment verified. Status → "converted". Pipeline → "converted". User account created. Welcome email sent.</span></div>
+    </div>
+  </div>
+
+  <h3>Example Score Accumulation</h3>
+  <div class="flow">
+    <div class="flow-step">Visit page <strong>+2</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Stay 2min <strong>+8</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Scroll 50% <strong>+3</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Form start <strong>+8</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Submit <strong>+20</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Pricing <strong>+15</strong></div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">56 pts</div>
+    <span class="badge badge-hot" style="font-size:10pt; padding:6px 14px;">HOT</span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 8: API REFERENCE ==================== -->
+<div class="page">
+  <div class="section-num">Section 08</div>
+  <h2>API Reference</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">All endpoints for the engagement scoring system.</p>
+
+  <h3>Engagement Tracking</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Access</th></tr></thead>
+    <tbody>
+      <tr><td><span class="api-method method-post">POST</span></td><td class="api-path">/api/v1/pm/engagement/track</td><td>Track single event</td><td>Public</td></tr>
+      <tr><td><span class="api-method method-post">POST</span></td><td class="api-path">/api/v1/pm/engagement/sync</td><td>Batch sync events to inquiry</td><td>Public</td></tr>
+      <tr><td><span class="api-method method-get">GET</span></td><td class="api-path">/api/v1/pm/engagement/:id</td><td>Get engagement data</td><td>Admin</td></tr>
+      <tr><td><span class="api-method method-post">POST</span></td><td class="api-path">/api/v1/pm/engagement/decay</td><td>Run score decay</td><td>Admin</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Scoring Configuration</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Access</th></tr></thead>
+    <tbody>
+      <tr><td><span class="api-method method-get">GET</span></td><td class="api-path">/api/v1/pm/scoring-config</td><td>Get scoring config</td><td>Admin</td></tr>
+      <tr><td><span class="api-method method-patch">PATCH</span></td><td class="api-path">/api/v1/pm/scoring-config</td><td>Update scores/thresholds/decay</td><td>Admin</td></tr>
+      <tr><td><span class="api-method method-post">POST</span></td><td class="api-path">/api/v1/pm/scoring-config/reset</td><td>Reset to defaults</td><td>Admin</td></tr>
+      <tr><td><span class="api-method method-post">POST</span></td><td class="api-path">/api/v1/pm/scoring-config/events</td><td>Add custom event</td><td>Admin</td></tr>
+      <tr><td><span class="api-method method-patch">PATCH</span></td><td class="api-path">/api/v1/pm/scoring-config/events/:id</td><td>Edit event</td><td>Admin</td></tr>
+      <tr><td><span class="api-method method-delete">DELETE</span></td><td class="api-path">/api/v1/pm/scoring-config/events/:id</td><td>Delete custom event</td><td>Admin</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Key Request/Response Examples</h3>
+  <h4>POST /engagement/sync</h4>
+  <div class="json-block"><span class="comment">// Request</span>
+{
+  <span class="json-key">"inquiryId"</span>: <span class="json-string">"507f1f77bcf86cd799439011"</span>,
+  <span class="json-key">"events"</span>: [
+    { <span class="json-key">"event"</span>: <span class="json-string">"page_visit"</span>, <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-16T10:00:00Z"</span> },
+    { <span class="json-key">"event"</span>: <span class="json-string">"time_2min"</span>, <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-16T10:02:00Z"</span> },
+    { <span class="json-key">"event"</span>: <span class="json-string">"form_submitted"</span>, <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-16T10:05:00Z"</span> }
+  ]
+}
+
+<span class="comment">// Response</span>
+{
+  <span class="json-key">"statusCode"</span>: <span class="json-number">200</span>,
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"engagementScore"</span>: <span class="json-number">30</span>,
+    <span class="json-key">"pipelineStage"</span>: <span class="json-string">"warm"</span>,
+    <span class="json-key">"eventsProcessed"</span>: <span class="json-number">3</span>
+  }
+}</div>
+</div>
+
+<!-- ==================== SECTION 9: ADMIN PANEL ==================== -->
+<div class="page">
+  <div class="section-num">Section 09</div>
+  <h2>Admin Panel</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">The scoring configuration page at <code>/admin/scoring</code>.</p>
+
+  <h3>Features</h3>
+  <ul>
+    <li><strong>System Events</strong> &mdash; View all 11 built-in events with toggle on/off and editable scores</li>
+    <li><strong>Custom Events</strong> &mdash; Full CRUD: Add, Edit, Delete custom scoring events</li>
+    <li><strong>Pipeline Thresholds</strong> &mdash; Visual bar showing stage ranges + editable threshold inputs</li>
+    <li><strong>Score Decay</strong> &mdash; Toggle, configure inactive days and decay amount</li>
+    <li><strong>Example Journey</strong> &mdash; Live preview of score calculation with current values</li>
+    <li><strong>Save / Reset</strong> &mdash; Save changes to DB or reset everything to defaults</li>
+  </ul>
+
+  <h3>Inquiries Page Enhancements</h3>
+  <p>The <code>/admin/inquiries</code> page now shows:</p>
+  <ul>
+    <li><strong>Score column</strong> &mdash; Color-coded badge showing engagement score per lead</li>
+    <li><strong>Pipeline column</strong> &mdash; Badge showing current pipeline stage (New/Cold/Warm/Hot)</li>
+    <li><strong>Detail modal</strong> &mdash; Shows engagement score, pipeline stage, and last activity</li>
+    <li><strong>Status filter</strong> &mdash; Updated with Cold, Warm, Hot filter options</li>
+  </ul>
+
+  <h3>Admin Sidebar Navigation</h3>
+  <table>
+    <thead><tr><th>Menu Item</th><th>Path</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Dashboard</td><td><code>/admin</code></td><td>Overview stats</td></tr>
+      <tr><td>Inquiries</td><td><code>/admin/inquiries</code></td><td>Lead management with scores</td></tr>
+      <tr><td>Plans</td><td><code>/admin/plans</code></td><td>Membership plan CRUD</td></tr>
+      <tr><td>Members</td><td><code>/admin/members</code></td><td>Converted leads</td></tr>
+      <tr><td>Scoring</td><td><code>/admin/scoring</code></td><td>Scoring configuration</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 10: SCORE DECAY ==================== -->
+<div class="page">
+  <div class="section-num">Section 10</div>
+  <h2>Score Decay & Maintenance</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Preventing inactive users from staying in Hot stage forever.</p>
+
+  <h3>How Score Decay Works</h3>
+  <table>
+    <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Enabled</td><td>Yes</td><td>Score decay is active</td></tr>
+      <tr><td>Inactive Days</td><td>30</td><td>Days without activity before decay triggers</td></tr>
+      <tr><td>Decay Amount</td><td>10</td><td>Points subtracted per decay cycle</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Decay Logic</h3>
+  <div class="code-block"><span class="comment">// Finds all non-converted inquiries inactive for 30+ days</span>
+<span class="comment">// Reduces their score by 10 (minimum 0)</span>
+<span class="comment">// Recalculates pipeline stage</span>
+
+<span class="keyword">Example</span>:
+  Hot lead (score: <span class="number">55</span>) inactive <span class="number">30</span> days
+  → Score becomes <span class="number">45</span>
+  → Pipeline: Hot → <span class="string">Warm</span>
+
+  Warm lead (score: <span class="number">30</span>) inactive <span class="number">30</span> days
+  → Score becomes <span class="number">20</span>
+  → Pipeline: Warm → <span class="string">Cold</span></div>
+
+  <div class="info-box">
+    <p><strong>Converted leads are never decayed.</strong> Once a user pays, their status remains "Converted" permanently regardless of activity or score.</p>
+  </div>
+
+  <h3>Running Decay</h3>
+  <p>Score decay can be triggered via:</p>
+  <ul>
+    <li><strong>API call:</strong> <code>POST /api/v1/pm/engagement/decay</code></li>
+    <li><strong>Cron job:</strong> Set up a daily/weekly cron to call the decay endpoint</li>
+    <li><strong>Manual:</strong> Can be triggered from admin panel in future</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 11: EXAMPLES ==================== -->
+<div class="page">
+  <div class="section-num">Section 11</div>
+  <h2>Example Scenarios</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Real-world user journeys and their resulting pipeline stages.</p>
+
+  <h3>Scenario 1: Quick Bounce</h3>
+  <div class="flow">
+    <div class="flow-step">Visit <strong>+2</strong></div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">2 pts</div>
+    <span class="badge badge-new" style="font-size:10pt; padding:6px 14px;">NEW</span>
+  </div>
+  <p><em>User lands on homepage and leaves quickly. Minimal engagement.</em></p>
+
+  <h3>Scenario 2: Casual Browser</h3>
+  <div class="flow">
+    <div class="flow-step">Visit <strong>+2</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">30 sec <strong>+3</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Scroll <strong>+3</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">2nd page <strong>+2</strong></div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">10 pts</div>
+    <span class="badge badge-new" style="font-size:10pt; padding:6px 14px;">NEW</span>
+  </div>
+  <p><em>User browses a couple of pages, reads some content, but doesn't engage deeply.</em></p>
+
+  <h3>Scenario 3: Interested Visitor</h3>
+  <div class="flow">
+    <div class="flow-step">Visit <strong>+2</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">2 min <strong>+8</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Scroll <strong>+3</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">CTA <strong>+5</strong></div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">18 pts</div>
+    <span class="badge badge-cold" style="font-size:10pt; padding:6px 14px;">COLD</span>
+  </div>
+  <p><em>User reads content for 2 minutes and clicks a CTA. Showing initial interest.</em></p>
+
+  <h3>Scenario 4: Engaged Lead</h3>
+  <div class="flow">
+    <div class="flow-step">Return <strong>+5</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">2 min <strong>+8</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Pricing <strong>+15</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Form start <strong>+8</strong></div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">36 pts</div>
+    <span class="badge badge-warm" style="font-size:10pt; padding:6px 14px;">WARM</span>
+  </div>
+  <p><em>Returning visitor who checks pricing and starts filling the form. Strong buying signal.</em></p>
+
+  <h3>Scenario 5: Full Conversion</h3>
+  <div class="flow">
+    <div class="flow-step">All above <strong>+36</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Submit <strong>+20</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Payment</div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">56 pts</div>
+    <span class="badge badge-converted" style="font-size:10pt; padding:6px 14px;">CONVERTED</span>
+  </div>
+  <p><em>User completes the full journey: browse → engage → submit → pay. Score was "Hot" (56) but payment overrides to "Converted".</em></p>
+</div>
+
+<!-- ==================== SECTION 12: FILE STRUCTURE ==================== -->
+<div class="page" style="page-break-after: avoid;">
+  <div class="section-num">Section 12</div>
+  <h2>File Structure</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">All files created and modified for this system.</p>
+
+  <h3>Backend (bizcivitas-backend)</h3>
+  <table>
+    <thead><tr><th>File</th><th>Action</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>models/performance-marketing/pmInquiry.model.js</code></td><td><span class="badge badge-warm">Modified</span></td><td>Added engagementScore, pipelineStage, activityLog fields</td></tr>
+      <tr><td><code>models/performance-marketing/pmScoringConfig.model.js</code></td><td><span class="badge badge-custom">Created</span></td><td>Scoring config with events array, thresholds, decay</td></tr>
+      <tr><td><code>controllers/performance-marketing/pmEngagement.controller.js</code></td><td><span class="badge badge-custom">Created</span></td><td>Track, sync, decay, get engagement data</td></tr>
+      <tr><td><code>controllers/performance-marketing/pmScoringConfig.controller.js</code></td><td><span class="badge badge-custom">Created</span></td><td>CRUD for scoring config and events</td></tr>
+      <tr><td><code>routes/performance-marketing/pmEngagement.routes.js</code></td><td><span class="badge badge-custom">Created</span></td><td>Engagement tracking routes</td></tr>
+      <tr><td><code>routes/performance-marketing/pmScoringConfig.routes.js</code></td><td><span class="badge badge-custom">Created</span></td><td>Scoring config routes</td></tr>
+      <tr><td><code>app.js</code></td><td><span class="badge badge-warm">Modified</span></td><td>Mounted engagement + scoring-config routes</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Frontend (bizcivitas-performance-marketing)</h3>
+  <table>
+    <thead><tr><th>File</th><th>Action</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/hooks/useEngagementTracker.ts</code></td><td><span class="badge badge-custom">Created</span></td><td>React hook for tracking all user behavior</td></tr>
+      <tr><td><code>src/components/EngagementTracker.tsx</code></td><td><span class="badge badge-custom">Created</span></td><td>Client component wrapper for the hook</td></tr>
+      <tr><td><code>src/app/admin/scoring/page.tsx</code></td><td><span class="badge badge-custom">Created</span></td><td>Admin scoring configuration page</td></tr>
+      <tr><td><code>src/app/page.tsx</code></td><td><span class="badge badge-warm">Modified</span></td><td>Added EngagementTracker to landing page</td></tr>
+      <tr><td><code>src/app/checkout/page.tsx</code></td><td><span class="badge badge-warm">Modified</span></td><td>Added tracking hook for pricing_visit</td></tr>
+      <tr><td><code>src/components/InquiryModal.tsx</code></td><td><span class="badge badge-warm">Modified</span></td><td>Added form_started, form_submitted, syncEvents</td></tr>
+      <tr><td><code>src/components/admin/AdminShell.tsx</code></td><td><span class="badge badge-warm">Modified</span></td><td>Added Scoring nav item</td></tr>
+      <tr><td><code>src/app/admin/inquiries/page.tsx</code></td><td><span class="badge badge-warm">Modified</span></td><td>Added Score & Pipeline columns</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top: 40px; padding: 20px; background: #f8fafc; border-radius: 10px; text-align: center;">
+    <p style="color: #94a3b8; font-size: 9pt; margin:0;">BizCivitas Performance Marketing &bull; Engagement Scoring System v1.0 &bull; March 2026</p>
+  </div>
+</div>
+
+</body>
+</html>

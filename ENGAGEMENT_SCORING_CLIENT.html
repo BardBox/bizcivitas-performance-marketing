@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizCivitas - Smart Lead Scoring System | Client Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1a1a2e;
+    line-height: 1.7;
+    background: #fff;
+    font-size: 11pt;
+  }
+
+  /* Cover Page */
+  .cover {
+    height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f3460 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -25%;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -35%;
+    left: -15%;
+    width: 550px;
+    height: 550px;
+    background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .cover-content { position: relative; z-index: 1; max-width: 700px; }
+  .cover-badge {
+    display: inline-block;
+    background: rgba(249,115,22,0.15);
+    border: 1px solid rgba(249,115,22,0.3);
+    color: #f97316;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 6px 24px;
+    border-radius: 20px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .cover h1 {
+    font-size: 38pt;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 10px;
+    line-height: 1.15;
+  }
+  .cover h1 span { color: #f97316; }
+  .cover h2 {
+    font-size: 16pt;
+    font-weight: 300;
+    color: #94a3b8;
+    margin-bottom: 10px;
+  }
+  .cover-tagline {
+    font-size: 11pt;
+    color: #64748b;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .cover-divider {
+    width: 60px;
+    height: 3px;
+    background: #f97316;
+    margin: 30px auto;
+    border-radius: 2px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 50px;
+    justify-content: center;
+    margin-top: 30px;
+  }
+  .cover-meta-item { text-align: center; }
+  .cover-meta-item .label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  .cover-meta-item .value {
+    font-size: 11pt;
+    font-weight: 500;
+    color: #e2e8f0;
+  }
+
+  /* Page Layout */
+  .page {
+    padding: 50px 60px;
+    page-break-after: always;
+    min-height: 100vh;
+  }
+  .page:last-child { page-break-after: avoid; }
+
+  /* Section Headers */
+  .section-num {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #f97316;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+  }
+  h2 {
+    font-size: 24pt;
+    font-weight: 800;
+    color: #1a1a2e;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  h3 {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 28px 0 10px;
+  }
+  h4 {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #475569;
+    margin: 18px 0 8px;
+  }
+  .section-subtitle {
+    font-size: 11pt;
+    color: #64748b;
+    margin-bottom: 30px;
+    max-width: 600px;
+  }
+  .section-divider {
+    width: 40px;
+    height: 3px;
+    background: #f97316;
+    margin: 8px 0 20px;
+    border-radius: 2px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 10pt;
+  }
+  table thead th {
+    background: #1a1a2e;
+    color: white;
+    font-weight: 600;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  table thead th:first-child { border-radius: 8px 0 0 0; }
+  table thead th:last-child { border-radius: 0 8px 0 0; }
+  table tbody td {
+    padding: 11px 16px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  table tbody tr:last-child td { border-bottom: none; }
+  table tbody tr:nth-child(even) { background: #f8fafc; }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 18px 0;
+  }
+  .card-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin: 18px 0;
+  }
+  .card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .card-accent {
+    border-left: 4px solid #f97316;
+  }
+  .card-title {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 6px;
+  }
+  .card-desc {
+    font-size: 9.5pt;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .card-number {
+    font-size: 28pt;
+    font-weight: 800;
+    color: #f97316;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  /* Stat Cards */
+  .stat-row {
+    display: flex;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .stat-card {
+    flex: 1;
+    background: linear-gradient(135deg, #fff7ed, #fffbeb);
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-card .stat-value {
+    font-size: 32pt;
+    font-weight: 800;
+    color: #f97316;
+    line-height: 1;
+  }
+  .stat-card .stat-label {
+    font-size: 9pt;
+    font-weight: 600;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
+  /* Pipeline Visual */
+  .pipeline-bar {
+    display: flex;
+    border-radius: 12px;
+    overflow: hidden;
+    height: 50px;
+    margin: 18px 0;
+    border: 1px solid #e2e8f0;
+  }
+  .pipeline-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .pipeline-stage .stage-range {
+    font-size: 7pt;
+    font-weight: 400;
+    opacity: 0.8;
+    margin-top: 1px;
+  }
+  .stage-new { background: #dbeafe; color: #1d4ed8; width: 14%; }
+  .stage-cold { background: #cffafe; color: #0891b2; width: 19%; }
+  .stage-warm { background: #ffedd5; color: #ea580c; width: 30%; }
+  .stage-hot { background: #fee2e2; color: #dc2626; width: 22%; }
+  .stage-converted { background: #dcfce7; color: #16a34a; width: 15%; }
+
+  /* Flow Diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 15px 0;
+  }
+  .flow-step {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 9pt;
+    font-weight: 500;
+    color: #475569;
+  }
+  .flow-step strong { color: #f97316; }
+  .flow-arrow { color: #cbd5e1; font-size: 14pt; font-weight: 300; }
+  .flow-result {
+    background: #1a1a2e;
+    color: white;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 10pt;
+    font-weight: 700;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-new { background: #dbeafe; color: #1d4ed8; }
+  .badge-cold { background: #cffafe; color: #0891b2; }
+  .badge-warm { background: #ffedd5; color: #ea580c; }
+  .badge-hot { background: #fee2e2; color: #dc2626; }
+  .badge-converted { background: #dcfce7; color: #16a34a; }
+  .badge-auto { background: #e0e7ff; color: #4338ca; }
+  .badge-manual { background: #fef3c7; color: #92400e; }
+
+  /* Highlight & Info Boxes */
+  .highlight-box {
+    background: linear-gradient(135deg, #fff7ed, #fffbeb);
+    border-left: 4px solid #f97316;
+    border-radius: 0 12px 12px 0;
+    padding: 18px 22px;
+    margin: 18px 0;
+  }
+  .highlight-box p { font-size: 10pt; color: #92400e; }
+  .highlight-box strong { color: #1a1a2e; }
+
+  .info-box {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0 12px 12px 0;
+    padding: 18px 22px;
+    margin: 18px 0;
+  }
+  .info-box p { font-size: 10pt; color: #1e40af; }
+
+  .success-box {
+    background: #f0fdf4;
+    border-left: 4px solid #22c55e;
+    border-radius: 0 12px 12px 0;
+    padding: 18px 22px;
+    margin: 18px 0;
+  }
+  .success-box p { font-size: 10pt; color: #166534; }
+
+  /* Score Badge */
+  .score-badge {
+    display: inline-block;
+    background: #fff7ed;
+    color: #f97316;
+    font-weight: 700;
+    font-size: 12pt;
+    padding: 2px 10px;
+    border-radius: 6px;
+    border: 1px solid #fed7aa;
+  }
+
+  /* Journey Steps */
+  .journey-step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    background: #f97316;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11pt;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-num.step-green { background: #16a34a; }
+  .step-num.step-blue { background: #3b82f6; }
+  .step-content strong { color: #1a1a2e; font-size: 10.5pt; }
+  .step-content span { color: #64748b; font-size: 9.5pt; }
+
+  /* Icon List */
+  .icon-list { list-style: none; margin: 12px 0; padding: 0; }
+  .icon-list li {
+    padding: 8px 0;
+    font-size: 10pt;
+    color: #334155;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .icon-list li:last-child { border-bottom: none; }
+  .icon-list .icon {
+    width: 24px;
+    height: 24px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Comparison Table */
+  .compare-row {
+    display: flex;
+    gap: 20px;
+    margin: 15px 0;
+  }
+  .compare-card {
+    flex: 1;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .compare-before {
+    background: #fef2f2;
+    border: 2px solid #fecaca;
+  }
+  .compare-after {
+    background: #f0fdf4;
+    border: 2px solid #bbf7d0;
+  }
+  .compare-label {
+    font-size: 9pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  /* Two Column */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  p { font-size: 10pt; color: #475569; margin-bottom: 10px; }
+  ul, ol { margin: 10px 0 10px 24px; }
+  li { margin-bottom: 6px; font-size: 10pt; color: #334155; }
+
+  /* FAQ */
+  .faq-item { margin-bottom: 16px; }
+  .faq-q {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .faq-a { font-size: 10pt; color: #475569; }
+
+  /* Footer */
+  .doc-footer {
+    margin-top: 40px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    text-align: center;
+  }
+  .doc-footer p {
+    color: #94a3b8;
+    font-size: 9pt;
+    margin: 0;
+  }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { page-break-after: always; }
+    .cover { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER PAGE ==================== -->
+<div class="cover">
+  <div class="cover-content">
+    <div class="cover-badge">Client Guide</div>
+    <h1>Smart <span>Lead Scoring</span><br>& Pipeline System</h1>
+    <h2>BizCivitas Performance Marketing</h2>
+    <p class="cover-tagline">Automatically identify your most interested leads, prioritize follow-ups, and convert more visitors into paying members.</p>
+    <div class="cover-divider"></div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <div class="label">Document</div>
+        <div class="value">Client Overview</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Version</div>
+        <div class="value">1.0</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Date</div>
+        <div class="value">March 2026</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 1: WHY THIS MATTERS ==================== -->
+<div class="page">
+  <div class="section-num">Section 01</div>
+  <h2>Why Lead Scoring Matters</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Not all visitors are equal. Some are ready to buy today, others are just browsing. This system tells you who is who &mdash; automatically.</p>
+
+  <h3>The Problem</h3>
+  <div class="compare-row">
+    <div class="compare-card compare-before">
+      <div class="compare-label" style="color:#dc2626;">Without Lead Scoring</div>
+      <ul style="text-align:left; margin-top:10px;">
+        <li>All inquiries look the same</li>
+        <li>Sales team wastes time on cold leads</li>
+        <li>Hot leads slip through the cracks</li>
+        <li>No way to know who's really interested</li>
+        <li>Follow-ups are guesswork</li>
+        <li>No data on visitor behavior</li>
+      </ul>
+    </div>
+    <div class="compare-card compare-after">
+      <div class="compare-label" style="color:#16a34a;">With Lead Scoring</div>
+      <ul style="text-align:left; margin-top:10px;">
+        <li>Every lead gets a score based on real behavior</li>
+        <li>Focus on the leads most likely to convert</li>
+        <li>Hot leads are flagged immediately</li>
+        <li>Know exactly what each visitor did on your site</li>
+        <li>Data-driven follow-up priority</li>
+        <li>Full activity history per lead</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>The Business Impact</h3>
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">5x</div>
+      <div class="stat-label">Faster Lead Prioritization</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">100%</div>
+      <div class="stat-label">Automated Scoring</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">Zero</div>
+      <div class="stat-label">Manual Work Required</div>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>Bottom Line:</strong> Your sales team spends less time guessing and more time closing. The system watches every visitor's behavior and tells you who deserves immediate attention.</p>
+  </div>
+</div>
+
+<!-- ==================== PAGE 2: HOW IT WORKS ==================== -->
+<div class="page">
+  <div class="section-num">Section 02</div>
+  <h2>How It Works</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">The system silently tracks visitor behavior and builds a score. No forms, no surveys &mdash; just real behavior data.</p>
+
+  <h3>The Journey in 4 Steps</h3>
+
+  <div class="journey-step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Visitor arrives on your website</strong><br>
+      <span>The moment someone lands on your performance marketing page, tracking begins automatically. Every scroll, every click, every second spent &mdash; it all counts.</span>
+    </div>
+  </div>
+
+  <div class="journey-step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Behavior is scored in real-time</strong><br>
+      <span>Each action earns points. Browsing for 30 seconds? +3 points. Checking pricing? +15 points. Starting to fill a form? +8 points. The score builds silently.</span>
+    </div>
+  </div>
+
+  <div class="journey-step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Lead is categorized into a pipeline stage</strong><br>
+      <span>Based on their total score, the visitor is automatically placed into New, Cold, Warm, or Hot. Your team instantly knows who to prioritize.</span>
+    </div>
+  </div>
+
+  <div class="journey-step">
+    <div class="step-num step-green">4</div>
+    <div class="step-content">
+      <strong>Payment converts the lead</strong><br>
+      <span>When a lead completes payment through Razorpay, they become "Converted" &mdash; regardless of their score. Payment is the ultimate proof of intent.</span>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <p><strong>Fully Automatic:</strong> No manual tagging, no subjective judgment. The system assigns scores based on actual behavior, ensuring consistent and unbiased lead evaluation.</p>
+  </div>
+
+  <h3>What's Being Tracked?</h3>
+  <p>The system watches <strong>11 different types of user behavior</strong>, each worth a different number of points based on how strong a buying signal it represents:</p>
+
+  <div class="card-grid">
+    <div class="card card-accent">
+      <div class="card-title">Browsing Signals</div>
+      <div class="card-desc">Page visits, return visits, time spent on page, scroll depth, multiple pages viewed</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-title">Intent Signals</div>
+      <div class="card-desc">CTA clicks, pricing page visit, form started, form submitted, file downloads</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 3: PIPELINE STAGES ==================== -->
+<div class="page">
+  <div class="section-num">Section 03</div>
+  <h2>The Lead Pipeline</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Every visitor flows through 5 clear stages. You always know where each lead stands.</p>
+
+  <div class="pipeline-bar">
+    <div class="pipeline-stage stage-new">NEW<div class="stage-range">0&ndash;10 pts</div></div>
+    <div class="pipeline-stage stage-cold">COLD<div class="stage-range">11&ndash;25 pts</div></div>
+    <div class="pipeline-stage stage-warm">WARM<div class="stage-range">26&ndash;50 pts</div></div>
+    <div class="pipeline-stage stage-hot">HOT<div class="stage-range">51+ pts</div></div>
+    <div class="pipeline-stage stage-converted">CONVERTED<div class="stage-range">Paid</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Stage</th>
+        <th>Score Range</th>
+        <th>What It Means</th>
+        <th>Recommended Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-new">New</span></td>
+        <td>0 &ndash; 10</td>
+        <td>Just landed on the website, minimal engagement</td>
+        <td>No action needed yet &mdash; let the system track</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-cold">Cold</span></td>
+        <td>11 &ndash; 25</td>
+        <td>Browsing with some interest, not deeply engaged</td>
+        <td>Nurture with content (email, retargeting)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-warm">Warm</span></td>
+        <td>26 &ndash; 50</td>
+        <td>Actively engaging, exploring pricing or filling forms</td>
+        <td>Prioritize for follow-up call or message</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-hot">Hot</span></td>
+        <td>51+</td>
+        <td>Very high engagement, strong buying intent</td>
+        <td><strong>Immediate outreach!</strong> This lead is ready</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-converted">Converted</span></td>
+        <td>Payment done</td>
+        <td>Completed Razorpay payment, now a member</td>
+        <td>Onboard, welcome, and retain</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box">
+    <p><strong>Key Rule:</strong> A lead never goes below "Converted" once they pay. Payment is permanent &mdash; it overrides any score-based classification. Even if a converted member's score drops later, they stay as "Converted" forever.</p>
+  </div>
+
+  <h3>Score Thresholds are Adjustable</h3>
+  <p>The boundaries between stages (11, 26, 51) are <strong>not fixed</strong>. You can change them from the admin panel at any time. For example, if you want leads to reach "Warm" faster, lower the warm threshold from 26 to 20.</p>
+</div>
+
+<!-- ==================== PAGE 4: SCORING EVENTS ==================== -->
+<div class="page">
+  <div class="section-num">Section 04</div>
+  <h2>What Earns Points</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Every user action on your website is worth a specific number of points. Higher points = stronger buying signal.</p>
+
+  <h3>Default Scoring Events</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:25%">User Action</th>
+        <th style="width:10%">Points</th>
+        <th style="width:15%">Signal Strength</th>
+        <th>What It Tells You</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Page Visit</strong></td>
+        <td><span class="score-badge">+2</span></td>
+        <td>Low</td>
+        <td>User is browsing &mdash; basic interest</td>
+      </tr>
+      <tr>
+        <td><strong>Stay 30 Seconds</strong></td>
+        <td><span class="score-badge">+3</span></td>
+        <td>Low</td>
+        <td>Reading content, not just bouncing</td>
+      </tr>
+      <tr>
+        <td><strong>Scroll 50%+</strong></td>
+        <td><span class="score-badge">+3</span></td>
+        <td>Low</td>
+        <td>Engaging with page content</td>
+      </tr>
+      <tr>
+        <td><strong>Return Visit</strong></td>
+        <td><span class="score-badge">+5</span></td>
+        <td>Medium</td>
+        <td>Came back! Thinking about it seriously</td>
+      </tr>
+      <tr>
+        <td><strong>CTA Button Click</strong></td>
+        <td><span class="score-badge">+5</span></td>
+        <td>Medium</td>
+        <td>Clicking call-to-action &mdash; wants to learn more</td>
+      </tr>
+      <tr>
+        <td><strong>Stay 2 Minutes</strong></td>
+        <td><span class="score-badge">+8</span></td>
+        <td>Medium</td>
+        <td>Deep reading &mdash; seriously evaluating</td>
+      </tr>
+      <tr>
+        <td><strong>Started Filling Form</strong></td>
+        <td><span class="score-badge">+8</span></td>
+        <td>High</td>
+        <td>Began entering details &mdash; strong intent signal</td>
+      </tr>
+      <tr>
+        <td><strong>Downloaded a File</strong></td>
+        <td><span class="score-badge">+10</span></td>
+        <td>High</td>
+        <td>Saving information for later review</td>
+      </tr>
+      <tr>
+        <td><strong>5+ Pages Visited</strong></td>
+        <td><span class="score-badge">+10</span></td>
+        <td>High</td>
+        <td>Thorough research across the website</td>
+      </tr>
+      <tr>
+        <td><strong>Pricing Page Visit</strong></td>
+        <td><span class="score-badge">+15</span></td>
+        <td>Very High</td>
+        <td>Checking costs &mdash; considering purchase!</td>
+      </tr>
+      <tr>
+        <td><strong>Form Submitted</strong></td>
+        <td><span class="score-badge">+20</span></td>
+        <td>Very High</td>
+        <td>Submitted inquiry &mdash; wants to be contacted</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="success-box">
+    <p><strong>All scores are customizable.</strong> If you feel "Pricing Page Visit" should be worth +25 instead of +15, you can change it from the admin panel. No developer needed.</p>
+  </div>
+</div>
+
+<!-- ==================== PAGE 5: REAL EXAMPLES ==================== -->
+<div class="page">
+  <div class="section-num">Section 05</div>
+  <h2>Real-World Examples</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">See how different visitor behaviors translate into pipeline stages.</p>
+
+  <h3>Example 1: Quick Bounce</h3>
+  <div class="flow">
+    <div class="flow-step">Lands on page <strong>+2</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Leaves immediately</div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">2 pts</div>
+    <span class="badge badge-new" style="font-size:10pt; padding:6px 14px;">NEW</span>
+  </div>
+  <p style="color:#64748b; font-size:9.5pt;"><em>Minimal engagement. Not worth following up on.</em></p>
+
+  <h3>Example 2: Casual Browser</h3>
+  <div class="flow">
+    <div class="flow-step">Visit <strong>+2</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">30 sec <strong>+3</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Scroll <strong>+3</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">CTA click <strong>+5</strong></div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">13 pts</div>
+    <span class="badge badge-cold" style="font-size:10pt; padding:6px 14px;">COLD</span>
+  </div>
+  <p style="color:#64748b; font-size:9.5pt;"><em>Some interest, but not strong enough for immediate follow-up. Add to nurture campaign.</em></p>
+
+  <h3>Example 3: Serious Prospect</h3>
+  <div class="flow">
+    <div class="flow-step">Return visit <strong>+5</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">2 min read <strong>+8</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Pricing page <strong>+15</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Form started <strong>+8</strong></div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">36 pts</div>
+    <span class="badge badge-warm" style="font-size:10pt; padding:6px 14px;">WARM</span>
+  </div>
+  <p style="color:#64748b; font-size:9.5pt;"><em>Came back, checked pricing, started the form. This person is seriously considering! Follow up within 24 hours.</em></p>
+
+  <h3>Example 4: Ready to Buy</h3>
+  <div class="flow">
+    <div class="flow-step">All above <strong>+36</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Form submitted <strong>+20</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Pricing again <strong>+15</strong></div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">71 pts</div>
+    <span class="badge badge-hot" style="font-size:10pt; padding:6px 14px;">HOT</span>
+  </div>
+  <p style="color:#64748b; font-size:9.5pt;"><em>Submitted inquiry AND went back to pricing page. This lead is ready to buy &mdash; call them NOW!</em></p>
+
+  <h3>Example 5: Full Conversion</h3>
+  <div class="flow">
+    <div class="flow-step">Score: 71 <strong>HOT</strong></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Razorpay Payment</div>
+    <div class="flow-arrow">=</div>
+    <div class="flow-result">PAID</div>
+    <span class="badge badge-converted" style="font-size:10pt; padding:6px 14px;">CONVERTED</span>
+  </div>
+  <p style="color:#64748b; font-size:9.5pt;"><em>Payment completed! Lead becomes a member. Account created, welcome email sent.</em></p>
+</div>
+
+<!-- ==================== PAGE 6: ADMIN PANEL ==================== -->
+<div class="page">
+  <div class="section-num">Section 06</div>
+  <h2>Your Admin Panel</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">You have full control over the scoring system from the admin dashboard &mdash; no developer needed.</p>
+
+  <h3>What You Can See</h3>
+
+  <h4>Inquiries Page (<code>/admin/inquiries</code>)</h4>
+  <p>Every lead now shows two new columns:</p>
+
+  <table>
+    <thead><tr><th>Column</th><th>What It Shows</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Score</strong></td><td>Color-coded engagement score</td><td><span class="score-badge">38</span></td></tr>
+      <tr><td><strong>Pipeline</strong></td><td>Current pipeline stage badge</td><td><span class="badge badge-warm">WARM</span></td></tr>
+    </tbody>
+  </table>
+
+  <p>Click on any lead to see their <strong>complete activity timeline</strong> &mdash; every action they took on your website with timestamps.</p>
+
+  <h3>What You Can Control</h3>
+
+  <h4>Scoring Page (<code>/admin/scoring</code>)</h4>
+
+  <div class="card-grid">
+    <div class="card card-accent">
+      <div class="card-title">Adjust Scores</div>
+      <div class="card-desc">Change how many points each action is worth. Make "Pricing Visit" worth +25 instead of +15 if that's more important to your business.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-title">Toggle Events On/Off</div>
+      <div class="card-desc">Disable any event from scoring. If "Scroll 50%" doesn't matter to you, just toggle it off &mdash; it won't count anymore.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-title">Change Pipeline Thresholds</div>
+      <div class="card-desc">Adjust when leads move from Cold to Warm to Hot. Lower thresholds = leads move faster through the pipeline.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-title">Add Custom Events</div>
+      <div class="card-desc">Create your own scoring events. E.g., "Video Watched" (+12), "Testimonial Clicked" (+7), "Chat Initiated" (+8).</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-title">Score Decay Settings</div>
+      <div class="card-desc">Configure how quickly inactive leads lose their score. Keeps your pipeline fresh and accurate.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-title">Reset to Defaults</div>
+      <div class="card-desc">Made too many changes? One click to reset everything back to the original scoring values.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 7: CUSTOM EVENTS ==================== -->
+<div class="page">
+  <div class="section-num">Section 07</div>
+  <h2>Custom Scoring Events</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Create your own scoring events to track what matters most to your business.</p>
+
+  <h3>How It Works</h3>
+  <p>The system comes with 11 built-in events that cover the most common user behaviors. But every business is unique &mdash; you might want to track additional actions specific to your marketing strategy.</p>
+
+  <div class="two-col">
+    <div>
+      <h4>Built-in Events (System)</h4>
+      <ul class="icon-list">
+        <li><div class="icon">&#128274;</div>Cannot be deleted (they're core to the system)</li>
+        <li><div class="icon">&#9998;</div>Scores can be adjusted</li>
+        <li><div class="icon">&#128260;</div>Can be toggled on/off</li>
+        <li><div class="icon">&#9881;</div>Labels and descriptions cannot be changed</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Custom Events (Your Own)</h4>
+      <ul class="icon-list">
+        <li><div class="icon">&#10133;</div>Add as many as you want</li>
+        <li><div class="icon">&#9998;</div>Fully editable (name, score, description)</li>
+        <li><div class="icon">&#128465;</div>Can be deleted if no longer needed</li>
+        <li><div class="icon">&#128260;</div>Can be toggled on/off</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Example Custom Events You Might Create</h3>
+  <table>
+    <thead><tr><th>Event Name</th><th>Points</th><th>Why Track It</th></tr></thead>
+    <tbody>
+      <tr><td>Video Watched</td><td><span class="score-badge">+12</span></td><td>User watched your intro/demo video &mdash; very engaged</td></tr>
+      <tr><td>Testimonial Clicked</td><td><span class="score-badge">+7</span></td><td>Looking at social proof &mdash; considering purchase</td></tr>
+      <tr><td>Chat Initiated</td><td><span class="score-badge">+8</span></td><td>Proactively reaching out &mdash; wants answers</td></tr>
+      <tr><td>Comparison Page View</td><td><span class="score-badge">+10</span></td><td>Comparing plans/options &mdash; in decision phase</td></tr>
+      <tr><td>Brochure Download</td><td><span class="score-badge">+10</span></td><td>Saving material for offline review or sharing</td></tr>
+      <tr><td>Referral Link Shared</td><td><span class="score-badge">+15</span></td><td>Sharing with others &mdash; already a champion</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    <p><strong>Adding a custom event:</strong> Go to <code>/admin/scoring</code> → scroll to "Custom Events" section → click "Add Event" → enter name, points, and description → Save. The system starts tracking it immediately.</p>
+  </div>
+</div>
+
+<!-- ==================== PAGE 8: SCORE DECAY ==================== -->
+<div class="page">
+  <div class="section-num">Section 08</div>
+  <h2>Score Decay</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Keeping your pipeline fresh by reducing scores for inactive leads.</p>
+
+  <h3>The Problem It Solves</h3>
+  <p>Imagine a lead who visited your site 3 months ago, scored 55 points (Hot), but never came back. Are they still "Hot"? Probably not. Score decay ensures your pipeline stays accurate over time.</p>
+
+  <h3>How It Works</h3>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-number">30</div>
+      <div class="card-title">Days of Inactivity</div>
+      <div class="card-desc">After 30 days without any activity, the decay triggers (configurable)</div>
+    </div>
+    <div class="card">
+      <div class="card-number">-10</div>
+      <div class="card-title">Points Deducted</div>
+      <div class="card-desc">10 points are removed per decay cycle (configurable)</div>
+    </div>
+  </div>
+
+  <h3>Decay Examples</h3>
+  <table>
+    <thead><tr><th>Lead</th><th>Original Score</th><th>Original Stage</th><th>After Decay</th><th>New Stage</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Lead A (inactive 30 days)</td>
+        <td>55</td>
+        <td><span class="badge badge-hot">HOT</span></td>
+        <td>45</td>
+        <td><span class="badge badge-warm">WARM</span></td>
+      </tr>
+      <tr>
+        <td>Lead B (inactive 30 days)</td>
+        <td>30</td>
+        <td><span class="badge badge-warm">WARM</span></td>
+        <td>20</td>
+        <td><span class="badge badge-cold">COLD</span></td>
+      </tr>
+      <tr>
+        <td>Lead C (inactive 30 days)</td>
+        <td>8</td>
+        <td><span class="badge badge-new">NEW</span></td>
+        <td>0</td>
+        <td><span class="badge badge-new">NEW</span></td>
+      </tr>
+      <tr>
+        <td>Lead D (PAID member)</td>
+        <td>70</td>
+        <td><span class="badge badge-converted">CONVERTED</span></td>
+        <td>70</td>
+        <td><span class="badge badge-converted">CONVERTED</span> (no change)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box">
+    <p><strong>Converted leads are never decayed.</strong> Once someone has paid, they remain "Converted" permanently &mdash; no matter how long they've been inactive.</p>
+  </div>
+
+  <h3>Configurable Settings</h3>
+  <table>
+    <thead><tr><th>Setting</th><th>Default</th><th>What You Can Change</th></tr></thead>
+    <tbody>
+      <tr><td>Enable/Disable</td><td>Enabled</td><td>Turn off decay entirely if you prefer scores to be permanent</td></tr>
+      <tr><td>Inactive Days</td><td>30 days</td><td>Increase to 60 days for slower decay, or reduce to 14 days for faster</td></tr>
+      <tr><td>Decay Amount</td><td>10 points</td><td>Increase for aggressive cleanup, decrease for gradual reduction</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== PAGE 9: ACTIVITY LOG ==================== -->
+<div class="page">
+  <div class="section-num">Section 09</div>
+  <h2>Activity Timeline</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Every lead has a complete history of their behavior on your website.</p>
+
+  <h3>What You See Per Lead</h3>
+  <p>When you click on any inquiry in the admin panel, you can see their complete activity log:</p>
+
+  <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin:15px 0;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <div>
+        <div style="font-size:14pt; font-weight:700; color:#1a1a2e;">Rajesh Kumar</div>
+        <div style="font-size:9pt; color:#64748b;">rajesh@company.com &bull; +91 98765 43210</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:9pt; color:#64748b;">Engagement Score</div>
+        <div style="font-size:24pt; font-weight:800; color:#f97316;">38</div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <span class="badge badge-warm" style="font-size:9pt; padding:4px 12px;">WARM</span>
+      <span style="font-size:9pt; color:#64748b;">Last activity: Form Submitted</span>
+    </div>
+
+    <div style="font-size:9pt; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Activity Timeline</div>
+
+    <div style="border-left:2px solid #e2e8f0; padding-left:16px; margin-left:6px;">
+      <div style="margin-bottom:10px; position:relative;">
+        <div style="position:absolute; left:-22px; top:3px; width:10px; height:10px; background:#f97316; border-radius:50%;"></div>
+        <div style="font-size:9pt; color:#94a3b8;">Mar 16, 10:05 AM</div>
+        <div style="font-size:10pt; color:#1a1a2e; font-weight:500;">Form Submitted <span class="score-badge" style="font-size:8pt;">+20</span></div>
+      </div>
+      <div style="margin-bottom:10px; position:relative;">
+        <div style="position:absolute; left:-22px; top:3px; width:10px; height:10px; background:#fed7aa; border-radius:50%;"></div>
+        <div style="font-size:9pt; color:#94a3b8;">Mar 16, 10:03 AM</div>
+        <div style="font-size:10pt; color:#1a1a2e; font-weight:500;">Form Started <span class="score-badge" style="font-size:8pt;">+8</span></div>
+      </div>
+      <div style="margin-bottom:10px; position:relative;">
+        <div style="position:absolute; left:-22px; top:3px; width:10px; height:10px; background:#fed7aa; border-radius:50%;"></div>
+        <div style="font-size:9pt; color:#94a3b8;">Mar 16, 10:02 AM</div>
+        <div style="font-size:10pt; color:#1a1a2e; font-weight:500;">Stayed 2 Minutes <span class="score-badge" style="font-size:8pt;">+8</span></div>
+      </div>
+      <div style="margin-bottom:10px; position:relative;">
+        <div style="position:absolute; left:-22px; top:3px; width:10px; height:10px; background:#e2e8f0; border-radius:50%;"></div>
+        <div style="font-size:9pt; color:#94a3b8;">Mar 16, 10:00 AM</div>
+        <div style="font-size:10pt; color:#1a1a2e; font-weight:500;">Page Visit <span class="score-badge" style="font-size:8pt;">+2</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>How to Use This Information</h3>
+  <div class="card-grid">
+    <div class="card card-accent">
+      <div class="card-title">Before Calling a Lead</div>
+      <div class="card-desc">Check their activity log to understand what they looked at. If they visited the pricing page, lead with pricing. If they downloaded a brochure, they want details.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-title">Identify Drop-off Points</div>
+      <div class="card-desc">If many leads start the form but don't submit, something is wrong with the form. The activity data helps you improve your funnel.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 10: FILTERING & PRIORITIZATION ==================== -->
+<div class="page">
+  <div class="section-num">Section 10</div>
+  <h2>Filtering & Prioritization</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Use pipeline stages to filter and prioritize your sales efforts.</p>
+
+  <h3>Admin Panel Filters</h3>
+  <p>The inquiries page lets you filter leads by pipeline stage:</p>
+
+  <table>
+    <thead><tr><th>Filter</th><th>What You See</th><th>Best For</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-hot">HOT</span></td><td>Leads scoring 51+ points</td><td>Immediate sales outreach &mdash; call these first!</td></tr>
+      <tr><td><span class="badge badge-warm">WARM</span></td><td>Leads scoring 26&ndash;50 points</td><td>Follow-up within 24&ndash;48 hours</td></tr>
+      <tr><td><span class="badge badge-cold">COLD</span></td><td>Leads scoring 11&ndash;25 points</td><td>Add to email nurture campaign</td></tr>
+      <tr><td><span class="badge badge-new">NEW</span></td><td>Leads scoring 0&ndash;10 points</td><td>Monitor for activity growth</td></tr>
+      <tr><td><span class="badge badge-converted">CONVERTED</span></td><td>Paid members</td><td>Onboarding & retention focus</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Recommended Sales Workflow</h3>
+
+  <div class="journey-step">
+    <div class="step-num" style="background:#dc2626;">1</div>
+    <div class="step-content">
+      <strong>Start with HOT leads every morning</strong><br>
+      <span>Filter by "Hot" &mdash; these are your highest-intent visitors. Call or message them immediately. They were just about to buy.</span>
+    </div>
+  </div>
+
+  <div class="journey-step">
+    <div class="step-num" style="background:#ea580c;">2</div>
+    <div class="step-content">
+      <strong>Work through WARM leads next</strong><br>
+      <span>These people showed real interest. A well-timed follow-up can push them to Hot or Converted. Check their activity log for talking points.</span>
+    </div>
+  </div>
+
+  <div class="journey-step">
+    <div class="step-num step-blue">3</div>
+    <div class="step-content">
+      <strong>Nurture COLD leads with content</strong><br>
+      <span>Send them helpful content, case studies, or testimonials via email or WhatsApp. They're aware of you but not convinced yet.</span>
+    </div>
+  </div>
+
+  <div class="journey-step">
+    <div class="step-num" style="background:#94a3b8;">4</div>
+    <div class="step-content">
+      <strong>Let NEW leads grow organically</strong><br>
+      <span>These are just browsers. Don't waste resources chasing them. The system will notify you if they become warmer.</span>
+    </div>
+  </div>
+
+  <div class="success-box">
+    <p><strong>Pro Tip:</strong> Check the admin panel at the start and end of each day. New Hot leads can appear at any time as visitors engage with your website.</p>
+  </div>
+</div>
+
+<!-- ==================== PAGE 11: DATA PRIVACY & SECURITY ==================== -->
+<div class="page">
+  <div class="section-num">Section 11</div>
+  <h2>Data & Privacy</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">How visitor data is handled responsibly.</p>
+
+  <h3>What Data Is Collected</h3>
+  <table>
+    <thead><tr><th>Data Type</th><th>When Collected</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Behavioral actions (clicks, scrolls, time)</td>
+        <td>During website visit</td>
+        <td>Calculate engagement score</td>
+      </tr>
+      <tr>
+        <td>Session identifier</td>
+        <td>First page visit</td>
+        <td>Group actions in one session</td>
+      </tr>
+      <tr>
+        <td>Return visit flag</td>
+        <td>On return visits</td>
+        <td>Identify returning visitors</td>
+      </tr>
+      <tr>
+        <td>Personal info (name, email, phone)</td>
+        <td>Only when user submits the inquiry form</td>
+        <td>Lead management & follow-up</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    <p><strong>Important:</strong> No personal information is collected until the visitor voluntarily submits the inquiry form. Before that, only anonymous behavioral data is tracked in the browser's session storage.</p>
+  </div>
+
+  <h3>Data Storage</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title">Before Form Submit</div>
+      <div class="card-desc">Events stored only in the visitor's browser (sessionStorage). Nothing is sent to the server. Data disappears when the tab closes.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">After Form Submit</div>
+      <div class="card-desc">Events are synced to the server and permanently stored with the lead record. Full activity history is available in admin.</div>
+    </div>
+  </div>
+
+  <h3>Access Control</h3>
+  <ul>
+    <li>Only <strong>admin users</strong> can access lead data and scoring configuration</li>
+    <li>Admin panel is protected by <strong>JWT authentication</strong> with httpOnly cookies</li>
+    <li>Public tracking endpoints only accept anonymous event data</li>
+    <li>Scoring configuration requires admin authentication to modify</li>
+  </ul>
+
+  <h3>Data Retention</h3>
+  <p>Lead data and activity logs are stored indefinitely for business intelligence. Score decay reduces scores but does not delete activity logs &mdash; you can always see the full history of a lead's engagement even after decay reduces their current score.</p>
+</div>
+
+<!-- ==================== PAGE 12: FAQ ==================== -->
+<div class="page">
+  <div class="section-num">Section 12</div>
+  <h2>Frequently Asked Questions</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Common questions about the lead scoring system.</p>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: Can I change the scoring values?</div>
+    <div class="faq-a">Yes! Go to <code>/admin/scoring</code> in the admin panel. You can adjust every event's point value, toggle events on/off, and change pipeline thresholds. No developer needed.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: What happens if I change a score after leads already have points?</div>
+    <div class="faq-a">Existing lead scores are NOT retroactively changed. The new scores only apply to future events. If a lead already earned 15 points for "Pricing Visit" and you change it to 25, their existing 15 points stay.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: Can a lead go from Hot back to Warm?</div>
+    <div class="faq-a">Only through score decay. If a Hot lead is inactive for 30+ days, their score decreases and they may drop back to Warm. Active leads never lose points.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: Can a Converted lead ever lose their status?</div>
+    <div class="faq-a">No, never. Once payment is verified, "Converted" is permanent. Score decay does not affect converted leads.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: Does the tracking slow down my website?</div>
+    <div class="faq-a">No. Tracking runs silently in the background using lightweight browser events (scroll listeners, timers). No visible impact on page load or user experience.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: What if a lead visits from different devices?</div>
+    <div class="faq-a">Pre-inquiry events are session-based (per browser tab). Once the lead submits the inquiry form, all future tracking is linked to their email address across devices.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: Can I add my own custom scoring events?</div>
+    <div class="faq-a">Yes! From the admin panel, you can create unlimited custom events with any name and point value. You can also edit and delete custom events anytime.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: How often should I check the admin panel?</div>
+    <div class="faq-a">We recommend checking Hot leads at least twice daily (morning and evening). Warm leads should be reviewed daily. Cold and New leads can be checked weekly.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: Can I reset everything to default values?</div>
+    <div class="faq-a">Yes. The scoring configuration page has a "Reset to Defaults" button that restores all 11 system events to their original scores and resets thresholds and decay settings.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Q: Is the data shared with anyone?</div>
+    <div class="faq-a">No. All lead data stays in your BizCivitas database. It is only accessible to authenticated admin users through the admin panel.</div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 13: QUICK REFERENCE ==================== -->
+<div class="page" style="page-break-after: avoid;">
+  <div class="section-num">Section 13</div>
+  <h2>Quick Reference Card</h2>
+  <div class="section-divider"></div>
+  <p class="section-subtitle">Keep this page handy for a quick overview of your lead scoring system.</p>
+
+  <h3>Pipeline Stages at a Glance</h3>
+  <div class="pipeline-bar">
+    <div class="pipeline-stage stage-new">NEW<div class="stage-range">0&ndash;10</div></div>
+    <div class="pipeline-stage stage-cold">COLD<div class="stage-range">11&ndash;25</div></div>
+    <div class="pipeline-stage stage-warm">WARM<div class="stage-range">26&ndash;50</div></div>
+    <div class="pipeline-stage stage-hot">HOT<div class="stage-range">51+</div></div>
+    <div class="pipeline-stage stage-converted">CONVERTED<div class="stage-range">Paid</div></div>
+  </div>
+
+  <h3>Top Scoring Events</h3>
+  <div class="card-grid-3">
+    <div class="card" style="text-align:center;">
+      <div style="font-size:22pt; font-weight:800; color:#f97316;">+20</div>
+      <div class="card-title">Form Submitted</div>
+      <div class="card-desc">Highest intent signal</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:22pt; font-weight:800; color:#f97316;">+15</div>
+      <div class="card-title">Pricing Page</div>
+      <div class="card-desc">Checking costs</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:22pt; font-weight:800; color:#f97316;">+10</div>
+      <div class="card-title">File Download</div>
+      <div class="card-desc">Saving information</div>
+    </div>
+  </div>
+
+  <h3>Key Admin URLs</h3>
+  <table>
+    <thead><tr><th>Page</th><th>URL</th><th>What You Do There</th></tr></thead>
+    <tbody>
+      <tr><td>Lead Management</td><td><code>/admin/inquiries</code></td><td>View all leads with scores and pipeline stages</td></tr>
+      <tr><td>Scoring Settings</td><td><code>/admin/scoring</code></td><td>Customize scores, thresholds, decay, custom events</td></tr>
+      <tr><td>Dashboard</td><td><code>/admin</code></td><td>Overview of all inquiry statistics</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Daily Checklist</h3>
+  <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin:15px 0;">
+    <ul style="list-style:none; margin:0; padding:0;">
+      <li style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-size:10pt; color:#334155;">&#9744;&nbsp;&nbsp; Check <span class="badge badge-hot">HOT</span> leads &mdash; call/message immediately</li>
+      <li style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-size:10pt; color:#334155;">&#9744;&nbsp;&nbsp; Review <span class="badge badge-warm">WARM</span> leads &mdash; follow up within 24 hours</li>
+      <li style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-size:10pt; color:#334155;">&#9744;&nbsp;&nbsp; Check new inquiries that came in overnight</li>
+      <li style="padding:8px 0; border-bottom:1px solid #e2e8f0; font-size:10pt; color:#334155;">&#9744;&nbsp;&nbsp; Review activity logs of leads you're about to call</li>
+      <li style="padding:8px 0; font-size:10pt; color:#334155;">&#9744;&nbsp;&nbsp; End of day: Review any leads that moved from Cold to Warm</li>
+    </ul>
+  </div>
+
+  <div class="doc-footer">
+    <p><strong>BizCivitas Performance Marketing</strong> &bull; Smart Lead Scoring System &bull; Client Guide v1.0 &bull; March 2026</p>
+    <p style="margin-top:4px;">For technical support, contact your BizCivitas administrator.</p>
+  </div>
+</div>
+
+</body>
+</html>

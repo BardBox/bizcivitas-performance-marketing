@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, Loader2, CheckCircle } from "lucide-react";
+import { syncEventsToInquiry } from "@/hooks/useEngagementTracker";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 interface InquiryModalProps {
   isOpen: boolean;
@@ -21,6 +24,22 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
     consentMessages: false,
     consentMarketing: false,
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const formStartedRef = useRef(false);
+
+  // Track form_started on first interaction
+  const handleFormFocus = () => {
+    if (formStartedRef.current) return;
+    formStartedRef.current = true;
+    // Store event in sessionStorage
+    try {
+      const events = JSON.parse(sessionStorage.getItem("pm_events") || "[]");
+      events.push({ event: "form_started", timestamp: new Date().toISOString() });
+      sessionStorage.setItem("pm_events", JSON.stringify(events));
+    } catch { /* silent */ }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -33,10 +52,68 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    onClose();
+    setSubmitting(true);
+    setError("");
+
+    try {
+      // Capture UTM params from URL
+      const params = new URLSearchParams(window.location.search);
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          utm_source: params.get("utm_source") || undefined,
+          utm_medium: params.get("utm_medium") || undefined,
+          utm_campaign: params.get("utm_campaign") || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Something went wrong");
+      }
+
+      const data = await res.json();
+      const inquiryId = data.data?._id;
+
+      // Track form_submitted and sync all events to this inquiry
+      try {
+        const events = JSON.parse(sessionStorage.getItem("pm_events") || "[]");
+        events.push({ event: "form_submitted", timestamp: new Date().toISOString() });
+        sessionStorage.setItem("pm_events", JSON.stringify(events));
+        if (inquiryId) {
+          await syncEventsToInquiry(inquiryId);
+        }
+      } catch { /* silent */ }
+
+      setSubmitted(true);
+
+      // Redirect to Razorpay checkout page after short delay
+      setTimeout(() => {
+        setFormData({
+          fullName: "",
+          companyName: "",
+          email: "",
+          phone: "",
+          city: "",
+          state: "",
+          role: "",
+          teamSize: "",
+          consentMessages: false,
+          consentMarketing: false,
+        });
+        onClose();
+        window.location.href = `/checkout?inquiry_id=${inquiryId}`;
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit inquiry");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -63,7 +140,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="px-8 py-4 space-y-2.5">
+        <form onSubmit={handleSubmit} onFocus={handleFormFocus} className="px-8 py-4 space-y-2.5">
           {/* Row 1: Full Name & Company Name */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -239,12 +316,30 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
             </label>
           </div>
 
+          {/* Error */}
+          {error && (
+            <p className="text-red-500 text-xs text-center">{error}</p>
+          )}
+
           {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-green hover:bg-green/90 text-white font-bold py-2.5 rounded-full text-base transition-all cursor-pointer hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]"
+            disabled={submitting || submitted}
+            className="w-full bg-green hover:bg-green/90 text-white font-bold py-2.5 rounded-full text-base transition-all cursor-pointer hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Submit
+            {submitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Submitting...
+              </>
+            ) : submitted ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Submitted!
+              </>
+            ) : (
+              "Submit"
+            )}
           </button>
 
           {/* Links */}

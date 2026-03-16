@@ -1,8 +1,8 @@
 const socials = [
-  { icon: "/images/facebook.svg", href: "https://facebook.com/" },
-  { icon: "/images/instagram.svg", href: "https://instagram.com/" },
-  { icon: "/images/linkedin.svg", href: "https://linkedin.com/" },
-  { icon: "/images/youtube.svg", href: "https://youtube.com/" },
+  { icon: "/images/facebook.svg", href: "https://www.facebook.com/bizcivitas/" },
+  { icon: "/images/instagram.svg", href: "https://www.instagram.com/bizcivitas/" },
+  { icon: "/images/linkedin.svg", href: "https://www.linkedin.com/company/bizcivitas/" },
+  { icon: "/images/youtube.svg", href: "https://www.youtube.com/@BizCivitas" },
 ];
 
 export default function Footer() {
