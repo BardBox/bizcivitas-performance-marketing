@@ -394,8 +394,41 @@ function CheckoutContent() {
           </div>
         )}
 
-        {/* Error */}
-        {status === "error" && (
+        {/* Error - Email already exists */}
+        {status === "error" && error?.toLowerCase().includes("already exists") && (
+          <div className="space-y-5">
+            <div className="text-center">
+              <img src="/images/logo.png" alt="BizCivitas" className="h-9 mx-auto mb-1" />
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              <div className="px-6 py-10 text-center">
+                <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-9 h-9 text-green-500" />
+                </div>
+                <h2 className="text-xl font-bold text-[#1a1a2e] mb-2">Congratulations!</h2>
+                <p className="text-gray-500 text-sm mb-1">You are already a BizCivitas member.</p>
+                <p className="text-gray-400 text-xs mb-6">User with this email already exists</p>
+                <div className="flex gap-3 justify-center">
+                  <a
+                    href="https://bizcivitas-userpanel.vercel.app/"
+                    className="bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors"
+                  >
+                    Go to Member Panel
+                  </a>
+                  <a
+                    href="/"
+                    className="border border-gray-200 text-gray-500 font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors"
+                  >
+Try again                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error - Generic */}
+        {status === "error" && !error?.toLowerCase().includes("already exists") && (
           <div className="space-y-5">
             <div className="text-center">
               <img src="/images/logo.png" alt="BizCivitas" className="h-9 mx-auto mb-1" />

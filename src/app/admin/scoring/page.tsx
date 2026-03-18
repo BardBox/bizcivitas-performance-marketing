@@ -30,6 +30,16 @@ interface ScoringEvent {
   isActive: boolean;
 }
 
+interface PipelineStage {
+  _id: string;
+  key: string;
+  label: string;
+  minScore: number;
+  color: string;
+  order: number;
+  isSystem: boolean;
+}
+
 interface Thresholds {
   cold: number;
   warm: number;
@@ -45,6 +55,7 @@ interface Decay {
 interface ScoringConfig {
   _id: string;
   events: ScoringEvent[];
+  pipelineStages: PipelineStage[];
   thresholds: Thresholds;
   decay: Decay;
 }
@@ -58,15 +69,23 @@ export default function ScoringPage() {
 
   // Local editable copies
   const [events, setEvents] = useState<ScoringEvent[]>([]);
+  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
   const [thresholds, setThresholds] = useState<Thresholds>({ cold: 11, warm: 26, hot: 51 });
   const [decay, setDecay] = useState<Decay>({ enabled: true, inactiveDays: 30, decayAmount: 10 });
 
-  // Add/Edit modal state
+  // Add/Edit modal state for events
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScoringEvent | null>(null);
   const [modalForm, setModalForm] = useState({ key: "", label: "", description: "", score: 5 });
   const [modalSaving, setModalSaving] = useState(false);
   const [modalError, setModalError] = useState("");
+
+  // Add/Edit modal state for pipeline stages
+  const [showStageModal, setShowStageModal] = useState(false);
+  const [editingStage, setEditingStage] = useState<PipelineStage | null>(null);
+  const [stageForm, setStageForm] = useState({ key: "", label: "", minScore: 0, color: "#8b5cf6" });
+  const [stageSaving, setStageSaving] = useState(false);
+  const [stageError, setStageError] = useState("");
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -76,6 +95,7 @@ export default function ScoringPage() {
       if (data.statusCode === 200) {
         setConfig(data.data);
         setEvents(data.data.events || []);
+        setPipelineStages((data.data.pipelineStages || []).sort((a: PipelineStage, b: PipelineStage) => a.order - b.order));
         setThresholds(data.data.thresholds);
         setDecay(data.data.decay);
       }
@@ -106,6 +126,7 @@ export default function ScoringPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           events: events.map((e) => ({ _id: e._id, score: e.score, isActive: e.isActive })),
+          pipelineStages: pipelineStages.map((s) => ({ _id: s._id, label: s.label, minScore: s.minScore, color: s.color, order: s.order })),
           thresholds,
           decay,
         }),
@@ -114,6 +135,7 @@ export default function ScoringPage() {
       if (data.statusCode === 200) {
         setConfig(data.data);
         setEvents(data.data.events);
+        setPipelineStages((data.data.pipelineStages || []).sort((a: PipelineStage, b: PipelineStage) => a.order - b.order));
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       }
@@ -125,7 +147,7 @@ export default function ScoringPage() {
   };
 
   const handleReset = async () => {
-    if (!confirm("Reset all scoring values to defaults? Custom events will be removed.")) return;
+    if (!confirm("Reset all scoring values to defaults? Custom events and stages will be removed.")) return;
     setSaving(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/reset`, { method: "POST" });
@@ -133,6 +155,7 @@ export default function ScoringPage() {
       if (data.statusCode === 200) {
         setConfig(data.data);
         setEvents(data.data.events);
+        setPipelineStages((data.data.pipelineStages || []).sort((a: PipelineStage, b: PipelineStage) => a.order - b.order));
         setThresholds(data.data.thresholds);
         setDecay(data.data.decay);
         setSaved(true);
@@ -253,13 +276,86 @@ export default function ScoringPage() {
     return e ? e.score : 0;
   };
   const exampleScore = getScore("page_visit") + getScore("time_2min") + getScore("pricing_visit") + getScore("form_submitted");
+  const sortedStagesDesc = [...pipelineStages].sort((a, b) => b.minScore - a.minScore);
   const getExampleStage = (score: number) => {
-    if (score >= thresholds.hot) return { label: "Hot", color: "text-red-600" };
-    if (score >= thresholds.warm) return { label: "Warm", color: "text-orange-600" };
-    if (score >= thresholds.cold) return { label: "Cold", color: "text-cyan-600" };
-    return { label: "New", color: "text-blue-600" };
+    for (const stage of sortedStagesDesc) {
+      if (score >= stage.minScore) return { label: stage.label, color: stage.color };
+    }
+    return { label: "New", color: "#3b82f6" };
   };
   const exampleStage = getExampleStage(exampleScore);
+
+  // Pipeline stage CRUD
+  const openAddStageModal = () => {
+    setEditingStage(null);
+    setStageForm({ key: "", label: "", minScore: 0, color: "#8b5cf6" });
+    setStageError("");
+    setShowStageModal(true);
+  };
+
+  const openEditStageModal = (stage: PipelineStage) => {
+    setEditingStage(stage);
+    setStageForm({ key: stage.key, label: stage.label, minScore: stage.minScore, color: stage.color });
+    setStageError("");
+    setShowStageModal(true);
+  };
+
+  const handleStageLabelChange = (label: string) => {
+    setStageForm((prev) => ({
+      ...prev,
+      label,
+      key: editingStage ? prev.key : label.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""),
+    }));
+  };
+
+  const handleStageSave = async () => {
+    if (!stageForm.label.trim()) { setStageError("Label is required"); return; }
+    setStageSaving(true);
+    setStageError("");
+    try {
+      let res;
+      if (editingStage) {
+        res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/stages/${editingStage._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(stageForm),
+        });
+      } else {
+        res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/stages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(stageForm),
+        });
+      }
+      const data = await res.json();
+      if (data.statusCode === 200 || data.statusCode === 201) {
+        setConfig(data.data);
+        setPipelineStages((data.data.pipelineStages || []).sort((a: PipelineStage, b: PipelineStage) => a.order - b.order));
+        setShowStageModal(false);
+      } else {
+        setStageError(data.message || "Failed to save stage");
+      }
+    } catch { setStageError("Network error"); }
+    finally { setStageSaving(false); }
+  };
+
+  const handleDeleteStage = async (stageId: string) => {
+    if (!confirm("Delete this pipeline stage?")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/stages/${stageId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.statusCode === 200) {
+        setConfig(data.data);
+        setPipelineStages((data.data.pipelineStages || []).sort((a: PipelineStage, b: PipelineStage) => a.order - b.order));
+      }
+    } catch (err) { console.error("Failed to delete stage:", err); }
+  };
+
+  const updateStageLocally = (stageId: string, field: string, value: number | string) => {
+    setPipelineStages((prev) =>
+      prev.map((s) => (s._id === stageId ? { ...s, [field]: value } : s))
+    );
+  };
 
   const systemEvents = events.filter((e) => e.isSystem);
   const customEvents = events.filter((e) => !e.isSystem);
@@ -451,80 +547,97 @@ export default function ScoringPage() {
         </div>
       </div>
 
-      {/* Pipeline Thresholds */}
+      {/* Pipeline Stages */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-base font-semibold text-[#1a1a2e]">Pipeline Thresholds</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Score ranges that determine each pipeline stage</p>
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-[#1a1a2e]">Pipeline Stages</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Score ranges that determine each pipeline stage</p>
+          </div>
+          <button
+            onClick={openAddStageModal}
+            className="flex items-center gap-1.5 bg-[#f97316] hover:bg-[#ea580c] text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Stage
+          </button>
         </div>
         <div className="p-6">
           {/* Visual pipeline bar */}
           <div className="mb-6">
             <div className="flex rounded-lg overflow-hidden h-10 border border-gray-200">
-              <div
-                className="bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700"
-                style={{ width: `${(thresholds.cold / (thresholds.hot + 30)) * 100}%` }}
-              >
-                New (0–{thresholds.cold - 1})
-              </div>
-              <div
-                className="bg-cyan-100 flex items-center justify-center text-xs font-semibold text-cyan-700"
-                style={{ width: `${((thresholds.warm - thresholds.cold) / (thresholds.hot + 30)) * 100}%` }}
-              >
-                Cold ({thresholds.cold}–{thresholds.warm - 1})
-              </div>
-              <div
-                className="bg-orange-100 flex items-center justify-center text-xs font-semibold text-orange-700"
-                style={{ width: `${((thresholds.hot - thresholds.warm) / (thresholds.hot + 30)) * 100}%` }}
-              >
-                Warm ({thresholds.warm}–{thresholds.hot - 1})
-              </div>
-              <div className="bg-red-100 flex items-center justify-center text-xs font-semibold text-red-700 flex-1">
-                Hot ({thresholds.hot}+)
-              </div>
+              {[...pipelineStages].sort((a, b) => a.minScore - b.minScore).map((stage, i, arr) => {
+                const maxScore = arr[arr.length - 1]?.minScore || 51;
+                const nextMin = arr[i + 1]?.minScore ?? maxScore + 30;
+                const total = maxScore + 30;
+                const width = i === arr.length - 1
+                  ? undefined
+                  : `${((nextMin - stage.minScore) / total) * 100}%`;
+                return (
+                  <div
+                    key={stage._id}
+                    className={`flex items-center justify-center text-xs font-semibold ${i === arr.length - 1 ? "flex-1" : ""}`}
+                    style={{
+                      backgroundColor: stage.color + "20",
+                      color: stage.color,
+                      width: width,
+                    }}
+                  >
+                    {stage.label} ({stage.minScore}{i === arr.length - 1 ? "+" : `–${nextMin - 1}`})
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="border border-cyan-200 bg-cyan-50 rounded-xl p-4">
-              <p className="text-xs font-semibold text-cyan-700 uppercase tracking-wide mb-2">Cold starts at</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={thresholds.cold}
-                  onChange={(e) => setThresholds((prev) => ({ ...prev, cold: Math.max(1, parseInt(e.target.value) || 1) }))}
-                  className="w-20 text-center border border-cyan-300 rounded-lg px-2 py-2 text-lg font-bold text-cyan-700 focus:outline-none focus:border-cyan-500 bg-white"
-                />
-                <span className="text-sm text-cyan-600">points</span>
+          {/* Stage cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...pipelineStages].sort((a, b) => a.order - b.order).map((stage) => (
+              <div
+                key={stage._id}
+                className="border rounded-xl p-4 relative"
+                style={{ borderColor: stage.color + "40", backgroundColor: stage.color + "08" }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: stage.color }} />
+                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: stage.color }}>
+                      {stage.label}
+                    </p>
+                    {stage.isSystem && <Lock className="w-3 h-3 text-gray-400" />}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {!stage.isSystem && (
+                      <>
+                        <button onClick={() => openEditStageModal(stage)} className="p-1 hover:bg-white rounded cursor-pointer">
+                          <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                        </button>
+                        <button onClick={() => handleDeleteStage(stage._id)} className="p-1 hover:bg-white rounded cursor-pointer">
+                          <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Starts at</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={stage.minScore}
+                    onChange={(e) => updateStageLocally(stage._id, "minScore", Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-16 text-center border rounded-lg px-2 py-1.5 text-sm font-bold focus:outline-none bg-white"
+                    style={{ borderColor: stage.color + "60", color: stage.color }}
+                  />
+                  <span className="text-xs text-gray-500">points</span>
+                  <input
+                    type="color"
+                    value={stage.color}
+                    onChange={(e) => updateStageLocally(stage._id, "color", e.target.value)}
+                    className="w-7 h-7 rounded border border-gray-200 cursor-pointer ml-auto"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="border border-orange-200 bg-orange-50 rounded-xl p-4">
-              <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide mb-2">Warm starts at</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={thresholds.warm}
-                  onChange={(e) => setThresholds((prev) => ({ ...prev, warm: Math.max(1, parseInt(e.target.value) || 1) }))}
-                  className="w-20 text-center border border-orange-300 rounded-lg px-2 py-2 text-lg font-bold text-orange-700 focus:outline-none focus:border-orange-500 bg-white"
-                />
-                <span className="text-sm text-orange-600">points</span>
-              </div>
-            </div>
-            <div className="border border-red-200 bg-red-50 rounded-xl p-4">
-              <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2">Hot starts at</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={thresholds.hot}
-                  onChange={(e) => setThresholds((prev) => ({ ...prev, hot: Math.max(1, parseInt(e.target.value) || 1) }))}
-                  className="w-20 text-center border border-red-300 rounded-lg px-2 py-2 text-lg font-bold text-red-700 focus:outline-none focus:border-red-500 bg-white"
-                />
-                <span className="text-sm text-red-600">points</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -603,7 +716,7 @@ export default function ScoringPage() {
             <span className="bg-[#1a1a2e] text-white px-4 py-1.5 rounded-lg font-bold">
               {exampleScore} pts
             </span>
-            <span className={`font-bold text-lg ${exampleStage.color}`}>
+            <span className="font-bold text-lg" style={{ color: exampleStage.color }}>
               {exampleStage.label}
             </span>
           </div>
@@ -692,6 +805,89 @@ export default function ScoringPage() {
                   {editingEvent ? "Update" : "Add Event"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pipeline Stage Modal */}
+      {showStageModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h3 className="text-lg font-bold text-[#1a1a2e]">
+                {editingStage ? "Edit Stage" : "Add Pipeline Stage"}
+              </h3>
+              <button onClick={() => setShowStageModal(false)} className="p-1 hover:bg-gray-100 rounded-lg cursor-pointer">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              {stageError && (
+                <div className="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg">{stageError}</div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Stage Name *</label>
+                <input
+                  type="text"
+                  value={stageForm.label}
+                  onChange={(e) => handleStageLabelChange(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  placeholder="e.g. Very Hot"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Key</label>
+                <input
+                  type="text"
+                  value={stageForm.key}
+                  onChange={(e) => setStageForm((prev) => ({ ...prev, key: e.target.value }))}
+                  disabled={!!editingStage?.isSystem}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 font-mono disabled:bg-gray-50 disabled:text-gray-400"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Score *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={stageForm.minScore}
+                    onChange={(e) => setStageForm((prev) => ({ ...prev, minScore: Math.max(0, parseInt(e.target.value) || 0) }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={stageForm.color}
+                      onChange={(e) => setStageForm((prev) => ({ ...prev, color: e.target.value }))}
+                      className="w-10 h-10 rounded border border-gray-200 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={stageForm.color}
+                      onChange={(e) => setStageForm((prev) => ({ ...prev, color: e.target.value }))}
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-300"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t flex justify-end gap-3">
+              <button onClick={() => setShowStageModal(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 cursor-pointer">
+                Cancel
+              </button>
+              <button
+                onClick={handleStageSave}
+                disabled={stageSaving}
+                className="px-5 py-2 bg-[#f97316] text-white text-sm font-medium rounded-lg hover:bg-[#ea580c] cursor-pointer disabled:opacity-50 flex items-center gap-2"
+              >
+                {stageSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {editingStage ? "Update" : "Add Stage"}
+              </button>
             </div>
           </div>
         </div>

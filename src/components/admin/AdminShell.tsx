@@ -7,6 +7,8 @@ import {
   CreditCard,
   Users,
   Gauge,
+  Star,
+  Columns3,
   LogOut,
   Menu,
   X,
@@ -35,7 +37,17 @@ const navItems = [
     icon: Users,
   },
   {
-    label: "Scoring",
+    label: "Stories",
+    href: "/admin/stories",
+    icon: Star,
+  },
+  {
+    label: "Context",
+    href: "/admin/kanban",
+    icon: Columns3,
+  },
+  {
+    label: "Pipeline",
     href: "/admin/scoring",
     icon: Gauge,
   },

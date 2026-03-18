@@ -36,7 +36,7 @@ interface Inquiry {
   gstNumber?: string;
   consentMessages: boolean;
   consentMarketing: boolean;
-  status: "new" | "contacted" | "converted" | "hot" | "warm" | "cold";
+  status: string;
   engagementScore?: number;
   pipelineStage?: string;
   lastActivity?: string;
@@ -46,6 +46,15 @@ interface Inquiry {
   utm_medium?: string;
   utm_campaign?: string;
   createdAt: string;
+}
+
+interface PipelineStage {
+  _id: string;
+  key: string;
+  label: string;
+  minScore: number;
+  color: string;
+  order: number;
 }
 
 interface Stats {
@@ -58,35 +67,41 @@ interface Stats {
   cold: number;
 }
 
-const statusColors: Record<string, string> = {
-  new: "bg-blue-100 text-blue-700",
-  contacted: "bg-yellow-100 text-yellow-700",
-  converted: "bg-green-100 text-green-700",
-  hot: "bg-red-100 text-red-700",
-  warm: "bg-orange-100 text-orange-700",
-  cold: "bg-cyan-100 text-cyan-700",
-};
-
 export default function InquiriesPage() {
   const router = useRouter();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [stages, setStages] = useState<PipelineStage[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [pipelineFilter, setPipelineFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewInquiry, setViewInquiry] = useState<Inquiry | null>(null);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState("");
+  const [updatingPipeline, setUpdatingPipeline] = useState("");
+
+  const fetchStages = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config`);
+      const data = await res.json();
+      if (data.statusCode === 200 && data.data.pipelineStages) {
+        const sorted = [...data.data.pipelineStages].sort(
+          (a: PipelineStage, b: PipelineStage) => a.order - b.order
+        );
+        setStages(sorted);
+      }
+    } catch (err) {
+      console.error("Failed to fetch stages:", err);
+    }
+  }, []);
 
   const fetchInquiries = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "15" });
-      if (statusFilter) params.set("status", statusFilter);
 
       const res = await fetch(
         `${API_BASE_URL}/api/v1/pm/inquiry?${params.toString()}`
@@ -102,7 +117,7 @@ export default function InquiriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -123,27 +138,34 @@ export default function InquiriesPage() {
   }, [router]);
 
   useEffect(() => {
+    fetchStages();
+  }, [fetchStages]);
+
+  useEffect(() => {
     fetchInquiries();
     fetchStats();
   }, [fetchInquiries, fetchStats]);
 
-  const handleUpdateStatus = async (id: string, status: string) => {
-    setUpdatingStatus(id);
+  const handleUpdatePipeline = async (id: string, pipelineStage: string) => {
+    setUpdatingPipeline(id);
+    // Optimistic update
+    setInquiries((prev) =>
+      prev.map((i) => (i._id === id ? { ...i, pipelineStage } : i))
+    );
+    if (viewInquiry?._id === id) {
+      setViewInquiry({ ...viewInquiry, pipelineStage });
+    }
     try {
       await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ pipelineStage }),
       });
-      fetchInquiries();
-      fetchStats();
-      if (viewInquiry?._id === id) {
-        setViewInquiry({ ...viewInquiry, status: status as Inquiry["status"] });
-      }
     } catch (err) {
-      console.error("Failed to update status:", err);
+      console.error("Failed to update pipeline:", err);
+      fetchInquiries();
     } finally {
-      setUpdatingStatus("");
+      setUpdatingPipeline("");
     }
   };
 
@@ -221,15 +243,23 @@ export default function InquiriesPage() {
     }
   };
 
-  const filteredInquiries = searchQuery
-    ? inquiries.filter(
-        (i) =>
-          i.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.phone.includes(searchQuery)
-      )
-    : inquiries;
+  const getStageColor = (stageKey: string) => {
+    return stages.find((s) => s.key === stageKey)?.color || "#6b7280";
+  };
+
+  // Filter by search + pipeline
+  const filteredInquiries = inquiries.filter((i) => {
+    const matchesSearch = !searchQuery ||
+      i.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      i.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      i.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      i.phone.includes(searchQuery);
+
+    const matchesPipeline = !pipelineFilter ||
+      (i.pipelineStage || "new") === pipelineFilter;
+
+    return matchesSearch && matchesPipeline;
+  });
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-IN", {
@@ -241,53 +271,55 @@ export default function InquiriesPage() {
     });
   };
 
+  // Compute pipeline stage counts from current inquiries for stats
+  const pipelineCounts = stages.reduce<Record<string, number>>((acc, s) => {
+    acc[s.key] = 0;
+    return acc;
+  }, {});
+  inquiries.forEach((i) => {
+    const key = i.pipelineStage || "new";
+    if (pipelineCounts[key] !== undefined) pipelineCounts[key]++;
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold text-[#1a1a2e] mb-6">Inquiries</h1>
 
-      {/* Stats Cards */}
-      {stats && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-            {[
-              { label: "Total", value: stats.total, color: "bg-white border-gray-200" },
-              { label: "New", value: stats.new, color: "bg-blue-50 border-blue-200" },
-              { label: "Contacted", value: stats.contacted, color: "bg-yellow-50 border-yellow-200" },
-              { label: "Converted", value: stats.converted, color: "bg-green-50 border-green-200" },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className={`${s.color} border rounded-xl px-4 py-3 cursor-pointer hover:shadow-md transition-shadow`}
-                onClick={() => {
-                  setStatusFilter(s.label === "Total" ? "" : s.label.toLowerCase());
-                  setPage(1);
-                }}
-              >
-                <p className="text-xs text-gray-500 uppercase tracking-wide">{s.label}</p>
-                <p className="text-2xl font-bold text-[#1a1a2e] mt-1">{s.value}</p>
-              </div>
-            ))}
+      {/* Pipeline Stage Stats */}
+      {stages.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          {/* Total */}
+          <div
+            className="bg-white border border-gray-200 rounded-xl px-4 py-3 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => { setPipelineFilter(""); setPage(1); }}
+          >
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
+            <p className="text-2xl font-bold text-[#1a1a2e] mt-1">{stats?.total || inquiries.length}</p>
           </div>
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {[
-              { label: "Hot", value: stats.hot, color: "bg-red-50 border-red-200" },
-              { label: "Warm", value: stats.warm, color: "bg-orange-50 border-orange-200" },
-              { label: "Cold", value: stats.cold, color: "bg-cyan-50 border-cyan-200" },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className={`${s.color} border rounded-xl px-4 py-3 cursor-pointer hover:shadow-md transition-shadow`}
-                onClick={() => {
-                  setStatusFilter(s.label.toLowerCase());
-                  setPage(1);
-                }}
-              >
-                <p className="text-xs text-gray-500 uppercase tracking-wide">{s.label}</p>
-                <p className="text-2xl font-bold text-[#1a1a2e] mt-1">{s.value}</p>
+          {stages.map((s) => (
+            <div
+              key={s.key}
+              className={`border rounded-xl px-4 py-3 cursor-pointer hover:shadow-md transition-shadow ${
+                pipelineFilter === s.key ? "ring-2 ring-offset-1" : ""
+              }`}
+              style={{
+                backgroundColor: s.color + "10",
+                borderColor: s.color + "30",
+                ...(pipelineFilter === s.key ? { ringColor: s.color } : {}),
+              }}
+              onClick={() => {
+                setPipelineFilter(pipelineFilter === s.key ? "" : s.key);
+                setPage(1);
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                <p className="text-xs uppercase tracking-wide" style={{ color: s.color }}>{s.label}</p>
               </div>
-            ))}
-          </div>
-        </>
+              <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{pipelineCounts[s.key] || 0}</p>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Toolbar */}
@@ -314,20 +346,17 @@ export default function InquiriesPage() {
             </div>
 
             <select
-              value={statusFilter}
+              value={pipelineFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value);
+                setPipelineFilter(e.target.value);
                 setPage(1);
               }}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#f97316]"
             >
-              <option value="">All Status</option>
-              <option value="new">New</option>
-              <option value="cold">Cold</option>
-              <option value="warm">Warm</option>
-              <option value="hot">Hot</option>
-              <option value="contacted">Contacted</option>
-              <option value="converted">Converted</option>
+              <option value="">All Stages</option>
+              {stages.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
             </select>
           </div>
 
@@ -385,84 +414,89 @@ export default function InquiriesPage() {
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Location</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Score</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Pipeline</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Date</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredInquiries.map((inquiry) => (
-                  <tr
-                    key={inquiry._id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(inquiry._id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds([...selectedIds, inquiry._id]);
-                          } else {
-                            setSelectedIds(selectedIds.filter((id) => id !== inquiry._id));
-                          }
-                        }}
-                        className="accent-[#f97316]"
-                      />
-                    </td>
-                    <td className="px-4 py-3 font-medium text-[#1a1a2e]">
-                      {inquiry.fullName}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{inquiry.companyName}</td>
-                    <td className="px-4 py-3 text-gray-600">{inquiry.email}</td>
-                    <td className="px-4 py-3 text-gray-600">{inquiry.phone}</td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {[inquiry.city, inquiry.state].filter(Boolean).join(", ") || "-"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <ScoreBadge score={inquiry.engagementScore || 0} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <PipelineBadge stage={inquiry.pipelineStage || "new"} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={inquiry.status}
-                        onChange={(e) => handleUpdateStatus(inquiry._id, e.target.value)}
-                        disabled={updatingStatus === inquiry._id}
-                        className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${statusColors[inquiry.status]}`}
-                      >
-                        <option value="new">New</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="converted">Converted</option>
-                        <option value="hot">Hot</option>
-                <option value="warm">Warm</option>
-                <option value="cold">Cold</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                      {formatDate(inquiry.createdAt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleViewInquiry(inquiry)}
-                          className="p-1.5 text-gray-400 hover:text-[#f97316] hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
-                          title="View details"
+                {filteredInquiries.map((inquiry) => {
+                  const stageKey = inquiry.pipelineStage || "new";
+                  const stageColor = getStageColor(stageKey);
+
+                  return (
+                    <tr
+                      key={inquiry._id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(inquiry._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds([...selectedIds, inquiry._id]);
+                            } else {
+                              setSelectedIds(selectedIds.filter((id) => id !== inquiry._id));
+                            }
+                          }}
+                          className="accent-[#f97316]"
+                        />
+                      </td>
+                      <td className="px-4 py-3 font-medium text-[#1a1a2e]">
+                        {inquiry.fullName}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{inquiry.companyName}</td>
+                      <td className="px-4 py-3 text-gray-600">{inquiry.email}</td>
+                      <td className="px-4 py-3 text-gray-600">{inquiry.phone}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {[inquiry.city, inquiry.state].filter(Boolean).join(", ") || "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <ScoreBadge score={inquiry.engagementScore || 0} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={stageKey}
+                          onChange={(e) => handleUpdatePipeline(inquiry._id, e.target.value)}
+                          disabled={updatingPipeline === inquiry._id}
+                          className="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer uppercase tracking-wide appearance-none pr-6"
+                          style={{
+                            backgroundColor: stageColor + "18",
+                            color: stageColor,
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(stageColor)}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "right 6px center",
+                          }}
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(inquiry._id)}
-                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {stages.map((s) => (
+                            <option key={s.key} value={s.key}>{s.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                        {formatDate(inquiry.createdAt)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleViewInquiry(inquiry)}
+                            className="p-1.5 text-gray-400 hover:text-[#f97316] hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
+                            title="View details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(inquiry._id)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -526,8 +560,8 @@ export default function InquiriesPage() {
                 <DetailRow label="Submitted" value={formatDate(viewInquiry.createdAt)} />
               </div>
 
-              {/* Engagement Score */}
-              <div className="pt-3 border-t border-gray-100 flex items-center gap-4">
+              {/* Engagement Score + Pipeline */}
+              <div className="pt-3 border-t border-gray-100 flex items-center gap-4 flex-wrap">
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Engagement Score</p>
                   <div className="mt-1 flex items-center gap-2">
@@ -537,7 +571,25 @@ export default function InquiriesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Pipeline Stage</p>
-                  <div className="mt-1"><PipelineBadge stage={viewInquiry.pipelineStage || "new"} /></div>
+                  <div className="mt-1">
+                    <select
+                      value={viewInquiry.pipelineStage || "new"}
+                      onChange={(e) => handleUpdatePipeline(viewInquiry._id, e.target.value)}
+                      disabled={updatingPipeline === viewInquiry._id}
+                      className="text-xs font-semibold px-3 py-1 rounded-full border-0 cursor-pointer uppercase tracking-wide appearance-none pr-7"
+                      style={{
+                        backgroundColor: getStageColor(viewInquiry.pipelineStage || "new") + "18",
+                        color: getStageColor(viewInquiry.pipelineStage || "new"),
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(getStageColor(viewInquiry.pipelineStage || "new"))}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 8px center",
+                      }}
+                    >
+                      {stages.map((s) => (
+                        <option key={s.key} value={s.key}>{s.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 {viewInquiry.lastActivity && (
                   <div>
@@ -564,9 +616,7 @@ export default function InquiriesPage() {
                   </div>
                 ) : (
                   <div className="relative ml-3">
-                    {/* Timeline line */}
                     <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-gray-200" />
-
                     <div className="space-y-0">
                       {[...activityLog].reverse().map((entry, idx) => {
                         const runningScore = activityLog
@@ -575,7 +625,6 @@ export default function InquiriesPage() {
 
                         return (
                           <div key={idx} className="relative pl-6 py-2 group">
-                            {/* Timeline dot */}
                             <div className={`absolute left-[-4px] top-3.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
                               entry.scoreAdded >= 15 ? "bg-red-500" :
                               entry.scoreAdded >= 8 ? "bg-orange-500" :
@@ -622,24 +671,7 @@ export default function InquiriesPage() {
                 )}
               </div>
 
-              <div className="pt-3 border-t border-gray-100">
-                <label className="block text-xs font-semibold text-gray-500 mb-1">
-                  Status
-                </label>
-                <select
-                  value={viewInquiry.status}
-                  onChange={(e) => handleUpdateStatus(viewInquiry._id, e.target.value)}
-                  className={`text-sm font-medium px-3 py-1.5 rounded-lg border-0 cursor-pointer ${statusColors[viewInquiry.status]}`}
-                >
-                  <option value="new">New</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="converted">Converted</option>
-                  <option value="hot">Hot</option>
-                <option value="warm">Warm</option>
-                <option value="cold">Cold</option>
-                </select>
-              </div>
-
+              {/* Notes */}
               <div className="pt-3 border-t border-gray-100">
                 <label className="block text-xs font-semibold text-gray-500 mb-1">
                   Notes
@@ -689,14 +721,6 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
   );
 }
 
-const pipelineColors: Record<string, string> = {
-  new: "bg-blue-100 text-blue-700",
-  cold: "bg-cyan-100 text-cyan-700",
-  warm: "bg-orange-100 text-orange-700",
-  hot: "bg-red-100 text-red-700",
-  converted: "bg-green-100 text-green-700",
-};
-
 function ScoreBadge({ score }: { score: number }) {
   let color = "text-gray-500 bg-gray-100";
   if (score > 50) color = "text-red-700 bg-red-100";
@@ -707,14 +731,6 @@ function ScoreBadge({ score }: { score: number }) {
   return (
     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color}`}>
       {score}
-    </span>
-  );
-}
-
-function PipelineBadge({ stage }: { stage: string }) {
-  return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide ${pipelineColors[stage] || "bg-gray-100 text-gray-500"}`}>
-      {stage}
     </span>
   );
 }

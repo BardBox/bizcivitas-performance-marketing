@@ -17,6 +17,8 @@ import {
   Calendar,
   User,
   Key,
+  IndianRupee,
+  CreditCard,
 } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -31,7 +33,11 @@ interface Inquiry {
   state?: string;
   role?: string;
   teamSize?: string;
+  gstNumber?: string;
   notes?: string;
+  paymentAmount?: number;
+  razorpayPaymentId?: string;
+  razorpayOrderId?: string;
   createdAt: string;
 }
 
@@ -172,6 +178,8 @@ export default function MembersPage() {
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Email</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Phone</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Location</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Amount</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600">GST</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Converted</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
                 </tr>
@@ -198,6 +206,18 @@ export default function MembersPage() {
                     <td className="px-4 py-3 text-gray-600">{member.phone}</td>
                     <td className="px-4 py-3 text-gray-600">
                       {[member.city, member.state].filter(Boolean).join(", ") || "-"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {member.paymentAmount ? (
+                        <span className="text-green-700 font-semibold text-xs">
+                          ₹{member.paymentAmount.toLocaleString("en-IN")}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs font-mono">
+                      {member.gstNumber || "-"}
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                       {formatDate(member.createdAt)}
@@ -281,6 +301,29 @@ export default function MembersPage() {
                 />
                 <InfoRow icon={User} label="Role" value={viewMember.role} />
                 <InfoRow icon={Calendar} label="Converted On" value={formatDate(viewMember.createdAt)} />
+              </div>
+
+              {/* Payment Info */}
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-2">
+                <p className="text-[10px] text-green-600 uppercase tracking-wider font-semibold">Payment Details</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Amount Paid</span>
+                  <span className="font-bold text-green-700">
+                    {viewMember.paymentAmount ? `₹${viewMember.paymentAmount.toLocaleString("en-IN")}` : "-"}
+                  </span>
+                </div>
+                {viewMember.razorpayPaymentId && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Payment ID</span>
+                    <span className="font-mono text-xs text-gray-600">{viewMember.razorpayPaymentId}</span>
+                  </div>
+                )}
+                {viewMember.gstNumber && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">GST Number</span>
+                    <span className="font-mono font-medium text-[#1a1a2e]">{viewMember.gstNumber}</span>
+                  </div>
+                )}
               </div>
 
               {/* Credentials from notes */}
