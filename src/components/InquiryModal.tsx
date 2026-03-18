@@ -21,6 +21,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
     state: "",
     role: "",
     teamSize: "",
+    gstNumber: "",
     consentMessages: false,
     consentMarketing: false,
   });
@@ -103,6 +104,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
           state: "",
           role: "",
           teamSize: "",
+          gstNumber: "",
           consentMessages: false,
           consentMarketing: false,
         });
@@ -278,6 +280,22 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
                 <option value="100+">100+</option>
               </select>
             </div>
+          </div>
+
+          {/* Row 5: GST Number */}
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-0.5">
+              GST Number
+            </label>
+            <input
+              type="text"
+              name="gstNumber"
+              placeholder="e.g. 22AAAAA0000A1Z5"
+              value={formData.gstNumber}
+              onChange={handleChange}
+              maxLength={15}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors uppercase"
+            />
           </div>
 
           {/* Consent checkboxes */}

@@ -33,6 +33,7 @@ interface Inquiry {
   state?: string;
   role?: string;
   teamSize?: string;
+  gstNumber?: string;
   consentMessages: boolean;
   consentMarketing: boolean;
   status: "new" | "contacted" | "converted" | "hot" | "warm" | "cold";
@@ -516,6 +517,7 @@ export default function InquiriesPage() {
                 <DetailRow label="State" value={viewInquiry.state} />
                 <DetailRow label="Role" value={viewInquiry.role} />
                 <DetailRow label="Team Size" value={viewInquiry.teamSize} />
+                <DetailRow label="GST Number" value={viewInquiry.gstNumber} />
                 <DetailRow label="Consent Messages" value={viewInquiry.consentMessages ? "Yes" : "No"} />
                 <DetailRow label="Consent Marketing" value={viewInquiry.consentMarketing ? "Yes" : "No"} />
                 <DetailRow label="UTM Source" value={viewInquiry.utm_source} />
