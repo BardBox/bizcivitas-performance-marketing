@@ -100,16 +100,17 @@ export default function KanbanPage() {
       const configData = await configRes.json();
 
       if (inquiryData.statusCode === 200) {
-        setInquiries(inquiryData.data.inquiries);
+        // Exclude converted/paid members — they are on the Members page
+        const nonConverted = inquiryData.data.inquiries.filter(
+          (i: Inquiry) => i.status !== "converted"
+        );
+        setInquiries(nonConverted);
       }
       if (configData.statusCode === 200 && configData.data.pipelineStages) {
         const sorted = [...configData.data.pipelineStages].sort(
           (a: PipelineStage, b: PipelineStage) => a.order - b.order
         );
-        setStages([
-          ...sorted,
-          { _id: "converted", key: "converted", label: "Converted", minScore: 999, color: "#16a34a", order: 999 },
-        ]);
+        setStages(sorted);
       }
     } catch (err) {
       console.error("Failed to fetch:", err);
