@@ -16,8 +16,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/lib/api";
 
 interface ScoringEvent {
   _id: string;

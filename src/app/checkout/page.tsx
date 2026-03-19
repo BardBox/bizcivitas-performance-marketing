@@ -4,8 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Shield, CheckCircle, XCircle, Lock, Copy, Check } from "lucide-react";
 import { useEngagementTracker } from "@/hooks/useEngagementTracker";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/lib/api";
 
 declare global {
   interface Window {

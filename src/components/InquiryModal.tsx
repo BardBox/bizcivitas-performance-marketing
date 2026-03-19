@@ -3,8 +3,7 @@
 import { useState, useRef } from "react";
 import { X, Loader2, CheckCircle } from "lucide-react";
 import { syncEventsToInquiry } from "@/hooks/useEngagementTracker";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/lib/api";
 
 interface InquiryModalProps {
   isOpen: boolean;

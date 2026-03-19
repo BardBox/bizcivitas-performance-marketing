@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { API_BASE_URL } from "@/lib/api";
 
 // Scoring reference (mirrors backend)
 const SCORE_MAP: Record<string, number> = {
