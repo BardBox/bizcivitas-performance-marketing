@@ -91,8 +91,8 @@ export default function KanbanPage() {
     setLoading(true);
     try {
       const [inquiryRes, configRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/v1/pm/inquiry?page=1&limit=500`),
-        fetch(`${API_BASE_URL}/api/v1/pm/scoring-config`),
+        fetch(`${API_BASE_URL}/pm/inquiry?page=1&limit=500`),
+        fetch(`${API_BASE_URL}/pm/scoring-config`),
       ]);
       const inquiryData = await inquiryRes.json();
       const configData = await configRes.json();
@@ -131,7 +131,7 @@ export default function KanbanPage() {
     setLoadingActivity(true);
     setActivityLog([]);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/engagement/${inquiryId}`);
+      const res = await fetch(`${API_BASE_URL}/pm/engagement/${inquiryId}`);
       const data = await res.json();
       if (data.statusCode === 200 && data.data?.activityLog) {
         setActivityLog(data.data.activityLog);
@@ -151,7 +151,7 @@ export default function KanbanPage() {
   const handleUpdateStatus = async (id: string, status: string) => {
     setUpdatingStatus(id);
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/${id}`, {
+      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -169,7 +169,7 @@ export default function KanbanPage() {
 
   const handleUpdateNotes = async (id: string, notes: string) => {
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/${id}`, {
+      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes }),
@@ -193,7 +193,7 @@ export default function KanbanPage() {
     );
 
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/${inquiry._id}`, {
+      await fetch(`${API_BASE_URL}/pm/inquiry/${inquiry._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pipelineStage: newStageKey }),

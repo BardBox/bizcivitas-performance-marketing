@@ -54,7 +54,7 @@ export default function PlansPage() {
 
   const fetchPlans = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/plans`);
+      const res = await fetch(`${API_BASE_URL}/pm/plans`);
       const data = await res.json();
       if (res.ok) {
         setPlans(data.data || []);
@@ -124,8 +124,8 @@ export default function PlansPage() {
 
     try {
       const url = editingPlan
-        ? `${API_BASE_URL}/api/v1/pm/plans/${editingPlan._id}`
-        : `${API_BASE_URL}/api/v1/pm/plans`;
+        ? `${API_BASE_URL}/pm/plans/${editingPlan._id}`
+        : `${API_BASE_URL}/pm/plans`;
 
       const res = await fetch(url, {
         method: editingPlan ? "PATCH" : "POST",
@@ -149,7 +149,7 @@ export default function PlansPage() {
 
     setDeleting(id);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/plans/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/pm/plans/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -164,7 +164,7 @@ export default function PlansPage() {
 
   const toggleActive = async (plan: Plan) => {
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/plans/${plan._id}`, {
+      await fetch(`${API_BASE_URL}/pm/plans/${plan._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !plan.isActive }),
@@ -177,7 +177,7 @@ export default function PlansPage() {
 
   const setAsDefault = async (plan: Plan) => {
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/plans/${plan._id}`, {
+      await fetch(`${API_BASE_URL}/pm/plans/${plan._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isDefault: true }),

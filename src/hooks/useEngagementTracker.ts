@@ -95,7 +95,7 @@ export const syncEventsToInquiry = async (inquiryId: string): Promise<void> => {
   if (events.length === 0) return;
 
   try {
-    await fetch(`${API_BASE_URL}/api/v1/pm/engagement/sync`, {
+    await fetch(`${API_BASE_URL}/pm/engagement/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ inquiryId, events }),
@@ -112,7 +112,7 @@ export const syncEventsToInquiry = async (inquiryId: string): Promise<void> => {
 const sendEvent = async (event: string, email?: string) => {
   const sessionId = getSessionId();
   try {
-    await fetch(`${API_BASE_URL}/api/v1/pm/engagement/track`, {
+    await fetch(`${API_BASE_URL}/pm/engagement/track`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId, event, email }),

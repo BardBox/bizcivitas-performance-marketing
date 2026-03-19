@@ -89,7 +89,7 @@ export default function ScoringPage() {
   const fetchConfig = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config`);
+      const res = await fetch(`${API_BASE_URL}/pm/scoring-config`);
       const data = await res.json();
       if (data.statusCode === 200) {
         setConfig(data.data);
@@ -120,7 +120,7 @@ export default function ScoringPage() {
     setSaving(true);
     setSaved(false);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config`, {
+      const res = await fetch(`${API_BASE_URL}/pm/scoring-config`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,7 +149,7 @@ export default function ScoringPage() {
     if (!confirm("Reset all scoring values to defaults? Custom events and stages will be removed.")) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/reset`, { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/pm/scoring-config/reset`, { method: "POST" });
       const data = await res.json();
       if (data.statusCode === 200) {
         setConfig(data.data);
@@ -209,14 +209,14 @@ export default function ScoringPage() {
       let res;
       if (editingEvent) {
         // Update existing
-        res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/events/${editingEvent._id}`, {
+        res = await fetch(`${API_BASE_URL}/pm/scoring-config/events/${editingEvent._id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(modalForm),
         });
       } else {
         // Add new
-        res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/events`, {
+        res = await fetch(`${API_BASE_URL}/pm/scoring-config/events`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(modalForm),
@@ -242,7 +242,7 @@ export default function ScoringPage() {
   const handleDeleteEvent = async (eventId: string) => {
     if (!confirm("Delete this custom event?")) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/events/${eventId}`, {
+      const res = await fetch(`${API_BASE_URL}/pm/scoring-config/events/${eventId}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -314,13 +314,13 @@ export default function ScoringPage() {
     try {
       let res;
       if (editingStage) {
-        res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/stages/${editingStage._id}`, {
+        res = await fetch(`${API_BASE_URL}/pm/scoring-config/stages/${editingStage._id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(stageForm),
         });
       } else {
-        res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/stages`, {
+        res = await fetch(`${API_BASE_URL}/pm/scoring-config/stages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(stageForm),
@@ -341,7 +341,7 @@ export default function ScoringPage() {
   const handleDeleteStage = async (stageId: string) => {
     if (!confirm("Delete this pipeline stage?")) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config/stages/${stageId}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE_URL}/pm/scoring-config/stages/${stageId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.statusCode === 200) {
         setConfig(data.data);

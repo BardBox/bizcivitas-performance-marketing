@@ -60,7 +60,7 @@ export default function MembersPage() {
       });
 
       const res = await fetch(
-        `${API_BASE_URL}/api/v1/pm/inquiry?${params.toString()}`
+        `${API_BASE_URL}/pm/inquiry?${params.toString()}`
       );
       const data = await res.json();
 

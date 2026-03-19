@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const statsRes = await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/stats`);
+      const statsRes = await fetch(`${API_BASE_URL}/pm/inquiry/stats`);
       const statsData = await statsRes.json();
       if (statsData.statusCode === 200) setStats(statsData.data);
     } catch (err) {

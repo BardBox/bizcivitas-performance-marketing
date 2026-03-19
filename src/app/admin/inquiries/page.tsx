@@ -84,7 +84,7 @@ export default function InquiriesPage() {
 
   const fetchStages = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/scoring-config`);
+      const res = await fetch(`${API_BASE_URL}/pm/scoring-config`);
       const data = await res.json();
       if (data.statusCode === 200 && data.data.pipelineStages) {
         const sorted = [...data.data.pipelineStages].sort(
@@ -103,7 +103,7 @@ export default function InquiriesPage() {
       const params = new URLSearchParams({ page: String(page), limit: "15" });
 
       const res = await fetch(
-        `${API_BASE_URL}/api/v1/pm/inquiry?${params.toString()}`
+        `${API_BASE_URL}/pm/inquiry?${params.toString()}`
       );
       const data = await res.json();
 
@@ -120,7 +120,7 @@ export default function InquiriesPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/stats`);
+      const res = await fetch(`${API_BASE_URL}/pm/inquiry/stats`);
       const data = await res.json();
       if (data.statusCode === 200) {
         setStats(data.data);
@@ -155,7 +155,7 @@ export default function InquiriesPage() {
       setViewInquiry({ ...viewInquiry, pipelineStage });
     }
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/${id}`, {
+      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pipelineStage }),
@@ -171,7 +171,7 @@ export default function InquiriesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this inquiry?")) return;
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/${id}`, {
+      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
         method: "DELETE",
       });
       fetchInquiries();
@@ -188,7 +188,7 @@ export default function InquiriesPage() {
     )
       return;
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/delete-multiple`, {
+      await fetch(`${API_BASE_URL}/pm/inquiry/delete-multiple`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: selectedIds }),
@@ -203,7 +203,7 @@ export default function InquiriesPage() {
 
   const handleUpdateNotes = async (id: string, notes: string) => {
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/${id}`, {
+      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes }),
@@ -217,7 +217,7 @@ export default function InquiriesPage() {
     setLoadingActivity(true);
     setActivityLog([]);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/engagement/${inquiryId}`);
+      const res = await fetch(`${API_BASE_URL}/pm/engagement/${inquiryId}`);
       const data = await res.json();
       if (data.statusCode === 200 && data.data?.activityLog) {
         setActivityLog(data.data.activityLog);

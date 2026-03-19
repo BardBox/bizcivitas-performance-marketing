@@ -93,7 +93,7 @@ function CheckoutContent() {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/create-order`, {
+      const res = await fetch(`${API_BASE_URL}/pm/inquiry/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inquiryId, ...(planId ? { planId } : {}) }),
@@ -137,7 +137,7 @@ function CheckoutContent() {
       theme: { color: "#1a1a2e" },
       handler: async (response: RazorpayResponse) => {
         try {
-          const res = await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/verify-payment`, {
+          const res = await fetch(`${API_BASE_URL}/pm/inquiry/verify-payment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

@@ -45,7 +45,7 @@ export default function SuccessStories() {
   useEffect(() => {
     const fetchStories = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/pm/stories`);
+        const res = await fetch(`${API_BASE_URL}/pm/stories`);
         const data = await res.json();
         if (data.data && data.data.length > 0) {
           setStories(data.data);

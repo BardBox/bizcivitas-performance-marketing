@@ -47,7 +47,7 @@ export default function StoriesPage() {
   const fetchStories = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/stories/all`, {
+      const res = await fetch(`${API_BASE_URL}/pm/stories/all`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -111,8 +111,8 @@ export default function StoriesPage() {
     setSaving(true);
     try {
       const url = editingStory
-        ? `${API_BASE_URL}/api/v1/pm/stories/${editingStory._id}`
-        : `${API_BASE_URL}/api/v1/pm/stories`;
+        ? `${API_BASE_URL}/pm/stories/${editingStory._id}`
+        : `${API_BASE_URL}/pm/stories`;
       const method = editingStory ? "PATCH" : "POST";
 
       const formData = new FormData();
@@ -142,7 +142,7 @@ export default function StoriesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this story?")) return;
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/stories/${id}`, {
+      await fetch(`${API_BASE_URL}/pm/stories/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -154,7 +154,7 @@ export default function StoriesPage() {
 
   const toggleActive = async (story: Story) => {
     try {
-      await fetch(`${API_BASE_URL}/api/v1/pm/stories/${story._id}`, {
+      await fetch(`${API_BASE_URL}/pm/stories/${story._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -231,7 +231,7 @@ export default function StoriesPage() {
     try {
       await Promise.all(
         updated.map((s) =>
-          fetch(`${API_BASE_URL}/api/v1/pm/stories/${s._id}`, {
+          fetch(`${API_BASE_URL}/pm/stories/${s._id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             credentials: "include",

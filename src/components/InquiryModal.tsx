@@ -61,7 +61,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
       // Capture UTM params from URL
       const params = new URLSearchParams(window.location.search);
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/pm/inquiry/add`, {
+      const res = await fetch(`${API_BASE_URL}/pm/inquiry/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

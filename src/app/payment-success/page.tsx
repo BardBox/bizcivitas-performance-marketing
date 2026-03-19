@@ -30,8 +30,8 @@ function PaymentSuccessContent() {
     const markConverted = async () => {
       try {
         const endpoint = inquiryId
-          ? `${API_BASE_URL}/api/v1/pm/inquiry/${inquiryId}`
-          : `${API_BASE_URL}/api/v1/pm/inquiry/convert-by-email/${email}`;
+          ? `${API_BASE_URL}/pm/inquiry/${inquiryId}`
+          : `${API_BASE_URL}/pm/inquiry/convert-by-email/${email}`;
 
         const res = await fetch(endpoint, {
           method: "PATCH",
