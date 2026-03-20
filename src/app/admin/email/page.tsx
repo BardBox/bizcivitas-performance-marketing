@@ -10,6 +10,7 @@ import {
   UserX,
   AlertTriangle,
   RefreshCw,
+  Download,
   TrendingUp,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
@@ -57,6 +58,7 @@ const EVENT_ICONS: Record<string, { icon: typeof Mail; color: string }> = {
 export default function EmailEngagementPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [topLeads, setTopLeads] = useState<TopLead[]>([]);
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
@@ -86,6 +88,18 @@ export default function EmailEngagementPage() {
     fetchData();
   }, [router, fetchData]);
 
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await fetch(`${API_BASE_URL}/pm/mailerlite/sync`, { method: "POST" });
+      await fetchData();
+    } catch (err) {
+      console.error("Sync failed:", err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -113,6 +127,14 @@ export default function EmailEngagementPage() {
             <option value={30}>Last 30 days</option>
             <option value={90}>Last 90 days</option>
           </select>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#f97316] hover:bg-[#ea580c] text-white text-sm font-medium transition-colors cursor-pointer disabled:opacity-70"
+          >
+            {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {syncing ? "Syncing..." : "Sync MailerLite"}
+          </button>
           <button
             onClick={fetchData}
             className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer"
