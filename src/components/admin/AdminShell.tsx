@@ -10,6 +10,7 @@ import {
   Star,
   Columns3,
   Mail,
+  FileText,
   LogOut,
   Menu,
   X,
@@ -56,6 +57,11 @@ const navItems = [
     label: "Email",
     href: "/admin/email",
     icon: Mail,
+  },
+  {
+    label: "Templates",
+    href: "/admin/templates",
+    icon: FileText,
   },
 ];
 
