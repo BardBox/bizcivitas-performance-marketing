@@ -9,6 +9,7 @@ import {
   Gauge,
   Star,
   Columns3,
+  Mail,
   LogOut,
   Menu,
   X,
@@ -50,6 +51,11 @@ const navItems = [
     label: "Pipeline",
     href: "/admin/scoring",
     icon: Gauge,
+  },
+  {
+    label: "Email",
+    href: "/admin/email",
+    icon: Mail,
   },
 ];
 
