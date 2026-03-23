@@ -94,7 +94,7 @@ const inquiriesApi = api.injectEndpoints({
       async onQueryStarted({ id, ...patch }, { dispatch, queryFulfilled }) {
         // Optimistic update for kanban (page:1, limit:500)
         const patchResult = dispatch(
-          api.util.updateQueryData("getInquiries" as never, { page: 1, limit: 500 } as never, (draft: InquiriesResponse) => {
+          inquiriesApi.util.updateQueryData("getInquiries", { page: 1, limit: 500 }, (draft) => {
             const inquiry = draft.inquiries.find((i) => i._id === id);
             if (inquiry) Object.assign(inquiry, patch);
           })
