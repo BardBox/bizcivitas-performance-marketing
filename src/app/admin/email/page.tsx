@@ -20,8 +20,30 @@ import {
   Check,
   Clock,
   X,
+  Search,
+  Filter,
+  ArrowUpDown,
+  BarChart3,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+
+// ── Marketing Labels (synced with Contacts/Kanban) ──
+const MARKETING_LABELS: Record<string, { term: string; description: string }> = {
+  new: { term: "Inquiry", description: "Raw lead — just submitted the form" },
+  engaged: { term: "Lead (MQL)", description: "Marketing Qualified — showing interest" },
+  contacted: { term: "Prospect", description: "In conversation — sales outreach done" },
+  qualified: { term: "Sales Qualified (SQL)", description: "Confirmed buying intent" },
+  negotiation: { term: "Opportunity", description: "Deal in progress — proposal/pricing stage" },
+  won: { term: "Customer", description: "Converted — deal closed" },
+  lost: { term: "Churned", description: "Did not convert — lost opportunity" },
+  converted: { term: "Customer", description: "Converted — paid member" },
+  proposal: { term: "Opportunity", description: "Proposal sent — awaiting decision" },
+  follow_up: { term: "Nurturing", description: "Re-engagement — needs follow-up" },
+};
+
+const getMarketingLabel = (stageKey: string) => {
+  return MARKETING_LABELS[stageKey] || { term: stageKey, description: "In pipeline" };
+};
 
 // ── Types ──
 
@@ -124,6 +146,14 @@ export default function EmailPage() {
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
   const [days, setDays] = useState(30);
 
+  // Report filters
+  const [eventFilter, setEventFilter] = useState<string>("all");
+  const [eventSearch, setEventSearch] = useState("");
+  const [eventSort, setEventSort] = useState<"newest" | "oldest">("newest");
+  const [activeStatCard, setActiveStatCard] = useState<string | null>(null);
+  const [templateFilter, setTemplateFilter] = useState<string>("all");
+  const [pipelineFilter, setPipelineFilter] = useState<string>("all");
+
   // Automations state
   const [loadingAuto, setLoadingAuto] = useState(true);
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
@@ -198,8 +228,8 @@ export default function EmailPage() {
   }, [router, fetchAutomations]);
 
   useEffect(() => {
-    if (mainTab === "reports" && !stats) fetchReports();
-  }, [mainTab, stats, fetchReports]);
+    if (mainTab === "reports") fetchReports();
+  }, [mainTab, days, fetchReports]);
 
   // ── Handlers ──
 
@@ -460,37 +490,145 @@ export default function EmailPage() {
       )}
 
       {/* ═══════════ REPORTS TAB ═══════════ */}
-      {mainTab === "reports" && (
+      {mainTab === "reports" && (() => {
+        // Filter + sort recent events
+        const filteredEvents = recentEvents
+          .filter((event) => {
+            if (activeStatCard && activeStatCard !== "all") {
+              const typeMap: Record<string, string[]> = {
+                sent: ["sent"],
+                opens: ["open"],
+                clicks: ["click"],
+                unsubscribes: ["unsubscribe"],
+              };
+              if (typeMap[activeStatCard] && !typeMap[activeStatCard].includes(event.eventType)) return false;
+            }
+            if (eventFilter !== "all" && event.eventType !== eventFilter) return false;
+            if (templateFilter !== "all") {
+              if ((event.campaignName || "") !== templateFilter) return false;
+            }
+            if (pipelineFilter !== "all") {
+              if ((event.inquiryId?.pipelineStage || "unknown") !== pipelineFilter) return false;
+            }
+            if (eventSearch.trim()) {
+              const q = eventSearch.toLowerCase();
+              const name = event.inquiryId?.fullName?.toLowerCase() || "";
+              const email = event.email?.toLowerCase() || "";
+              const campaign = event.campaignName?.toLowerCase() || "";
+              if (!name.includes(q) && !email.includes(q) && !campaign.includes(q)) return false;
+            }
+            return true;
+          })
+          .sort((a, b) => {
+            const da = new Date(a.eventTimestamp).getTime();
+            const db = new Date(b.eventTimestamp).getTime();
+            return eventSort === "newest" ? db - da : da - db;
+          });
+
+        const statCards = [
+          {
+            key: "sent",
+            label: "Emails Sent",
+            value: stats?.sent || 0,
+            icon: Mail,
+            color: "border-blue-200",
+            activeColor: "bg-blue-500 border-blue-500",
+            iconColor: "text-blue-500",
+            activeIconColor: "text-white",
+            bgColor: "bg-blue-50",
+            activeBgColor: "bg-blue-500",
+          },
+          {
+            key: "opens",
+            label: "Opens",
+            value: stats?.opens || 0,
+            icon: Eye,
+            color: "border-green-200",
+            activeColor: "bg-green-500 border-green-500",
+            iconColor: "text-green-500",
+            activeIconColor: "text-white",
+            bgColor: "bg-green-50",
+            activeBgColor: "bg-green-500",
+            sub: stats ? `${stats.openRate}% rate` : undefined,
+          },
+          {
+            key: "clicks",
+            label: "Clicks",
+            value: stats?.clicks || 0,
+            icon: MousePointerClick,
+            color: "border-purple-200",
+            activeColor: "bg-purple-500 border-purple-500",
+            iconColor: "text-purple-500",
+            activeIconColor: "text-white",
+            bgColor: "bg-purple-50",
+            activeBgColor: "bg-purple-500",
+            sub: stats ? `${stats.clickRate}% rate` : undefined,
+          },
+          {
+            key: "unsubscribes",
+            label: "Unsubscribes",
+            value: stats?.unsubscribes || 0,
+            icon: UserX,
+            color: "border-red-200",
+            activeColor: "bg-red-500 border-red-500",
+            iconColor: "text-red-500",
+            activeIconColor: "text-white",
+            bgColor: "bg-red-50",
+            activeBgColor: "bg-red-500",
+          },
+        ];
+
+        // Extract unique template/campaign names and pipeline stages from events
+        const uniqueTemplates = [...new Set(recentEvents.map((e) => e.campaignName).filter(Boolean))] as string[];
+        const uniquePipelines = [...new Set(recentEvents.map((e) => e.inquiryId?.pipelineStage).filter(Boolean))] as string[];
+
+        const hasActiveFilters = activeStatCard || eventFilter !== "all" || eventSearch || templateFilter !== "all" || pipelineFilter !== "all";
+
+        return (
         <>
-          <div className="flex items-center gap-3 mb-6">
-            <select
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              <option value={7}>Last 7 days</option>
-              <option value={14}>Last 14 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 90 days</option>
-            </select>
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#f97316] hover:bg-[#ea580c] text-white text-sm font-medium transition-colors cursor-pointer disabled:opacity-70"
-            >
-              {syncing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              {syncing ? "Syncing..." : "Sync MailerLite"}
-            </button>
-            <button
-              onClick={fetchReports}
-              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <RefreshCw className="w-4 h-4 text-gray-500" />
-            </button>
+          {/* Controls Bar */}
+          <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+            <div className="flex items-center gap-2">
+              {/* Date Range Pills */}
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                {[
+                  { value: 7, label: "7d" },
+                  { value: 14, label: "14d" },
+                  { value: 30, label: "30d" },
+                  { value: 90, label: "90d" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setDays(opt.value)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                      days === opt.value
+                        ? "bg-white text-[#1a1a2e] shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#f97316] hover:bg-[#ea580c] text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-70"
+              >
+                {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                {syncing ? "Syncing..." : "Sync MailerLite"}
+              </button>
+              <button
+                onClick={() => { fetchReports(); }}
+                disabled={loadingReports}
+                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 text-gray-500 ${loadingReports ? "animate-spin" : ""}`} />
+              </button>
+            </div>
           </div>
 
           {loadingReports ? (
@@ -499,104 +637,104 @@ export default function EmailPage() {
             </div>
           ) : (
             <>
+              {/* Stat Cards — clickable to filter */}
               {stats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {[
-                    {
-                      label: "Emails Sent",
-                      value: stats.sent,
-                      icon: Mail,
-                      color: "bg-blue-50 border-blue-200",
-                      iconColor: "text-blue-500",
-                    },
-                    {
-                      label: "Opens",
-                      value: stats.opens,
-                      icon: Eye,
-                      color: "bg-green-50 border-green-200",
-                      iconColor: "text-green-500",
-                      sub: `${stats.openRate}% rate`,
-                    },
-                    {
-                      label: "Clicks",
-                      value: stats.clicks,
-                      icon: MousePointerClick,
-                      color: "bg-purple-50 border-purple-200",
-                      iconColor: "text-purple-500",
-                      sub: `${stats.clickRate}% rate`,
-                    },
-                    {
-                      label: "Unsubscribes",
-                      value: stats.unsubscribes,
-                      icon: UserX,
-                      color: "bg-red-50 border-red-200",
-                      iconColor: "text-red-500",
-                    },
-                  ].map((s) => (
-                    <div
-                      key={s.label}
-                      className={`${s.color} border rounded-xl px-4 py-4 hover:shadow-md transition-shadow`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">
-                          {s.label}
+                  {statCards.map((s) => {
+                    const isActive = activeStatCard === s.key;
+                    const Icon = s.icon;
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => {
+                          setActiveStatCard(isActive ? null : s.key);
+                          setEventFilter("all");
+                        }}
+                        className={`relative border rounded-xl px-4 py-4 text-left transition-all cursor-pointer ${
+                          isActive
+                            ? `${s.activeBgColor} ${s.activeColor} shadow-lg scale-[1.02]`
+                            : `${s.bgColor} ${s.color} hover:shadow-md`
+                        }`}
+                      >
+                        {isActive && (
+                          <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
+                        )}
+                        <div className="flex items-center justify-between">
+                          <p className={`text-xs uppercase tracking-wide ${
+                            isActive ? "text-white/80" : "text-gray-500"
+                          }`}>
+                            {s.label}
+                          </p>
+                          <Icon className={`w-4 h-4 ${isActive ? s.activeIconColor : s.iconColor}`} />
+                        </div>
+                        <p className={`text-3xl font-bold mt-2 ${
+                          isActive ? "text-white" : "text-[#1a1a2e]"
+                        }`}>
+                          {s.value}
                         </p>
-                        <s.icon className={`w-4 h-4 ${s.iconColor}`} />
-                      </div>
-                      <p className="text-3xl font-bold text-[#1a1a2e] mt-2">
-                        {s.value}
-                      </p>
-                      {s.sub && (
-                        <p className="text-xs text-gray-400 mt-1">{s.sub}</p>
-                      )}
-                    </div>
-                  ))}
+                        {s.sub && (
+                          <p className={`text-xs mt-1 ${isActive ? "text-white/70" : "text-gray-400"}`}>
+                            {s.sub}
+                          </p>
+                        )}
+                        {isActive && (
+                          <p className="text-[10px] text-white/60 mt-1">Click to clear filter</p>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Top Engaged Leads */}
-                <div className="bg-white border border-gray-200 rounded-xl p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp className="w-4 h-4 text-[#f97316]" />
-                    <h2 className="text-lg font-semibold text-[#1a1a2e]">
-                      Top Engaged Leads
-                    </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                {/* Top Engaged Leads — narrower */}
+                <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-[#f97316]" />
+                      <h2 className="text-sm font-semibold text-[#1a1a2e]">Top Engaged Leads</h2>
+                    </div>
+                    <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {topLeads.length} leads
+                    </span>
                   </div>
                   {topLeads.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-8">
-                      No engagement data yet
-                    </p>
+                    <div className="text-center py-10">
+                      <BarChart3 className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">No engagement data yet</p>
+                      <p className="text-xs text-gray-300 mt-0.5">Send campaigns to see results</p>
+                    </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {topLeads.map((lead, i) => (
                         <div
                           key={lead._id}
-                          className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors group"
                         >
                           <div className="flex items-center gap-3">
-                            <span className="text-xs font-bold text-gray-400 w-5">
-                              #{i + 1}
-                            </span>
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                              i === 0 ? "bg-amber-100 text-amber-700" :
+                              i === 1 ? "bg-gray-100 text-gray-600" :
+                              i === 2 ? "bg-orange-100 text-orange-700" :
+                              "bg-gray-50 text-gray-400"
+                            }`}>
+                              {i + 1}
+                            </div>
                             <div>
-                              <p className="text-sm font-medium text-[#1a1a2e] truncate max-w-[200px]">
+                              <p className="text-sm font-medium text-[#1a1a2e] truncate max-w-[160px]">
                                 {lead._id}
                               </p>
-                              <p className="text-xs text-gray-400">
-                                Last:{" "}
-                                {new Date(
-                                  lead.lastEngagement
-                                ).toLocaleDateString("en-IN")}
+                              <p className="text-[10px] text-gray-400">
+                                Last: {new Date(lead.lastEngagement).toLocaleDateString("en-IN")}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 text-xs">
-                            <span className="flex items-center gap-1 text-green-600">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="flex items-center gap-1 text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
                               <Eye className="w-3 h-3" /> {lead.opens}
                             </span>
-                            <span className="flex items-center gap-1 text-purple-600">
-                              <MousePointerClick className="w-3 h-3" />{" "}
-                              {lead.clicks}
+                            <span className="flex items-center gap-1 text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full">
+                              <MousePointerClick className="w-3 h-3" /> {lead.clicks}
                             </span>
                           </div>
                         </div>
@@ -605,57 +743,189 @@ export default function EmailPage() {
                   )}
                 </div>
 
-                {/* Recent Events */}
-                <div className="bg-white border border-gray-200 rounded-xl p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Mail className="w-4 h-4 text-[#f97316]" />
-                    <h2 className="text-lg font-semibold text-[#1a1a2e]">
-                      Recent Events
-                    </h2>
+                {/* Recent Events — wider with filters */}
+                <div className="lg:col-span-3 bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-[#f97316]" />
+                      <h2 className="text-sm font-semibold text-[#1a1a2e]">Recent Events</h2>
+                    </div>
+                    <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {filteredEvents.length} events
+                    </span>
                   </div>
-                  {recentEvents.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-8">
-                      No events recorded yet
-                    </p>
+
+                  {/* Event Filters Row 1: Search + Sort */}
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <div className="relative flex-1 min-w-[180px]">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={eventSearch}
+                        onChange={(e) => setEventSearch(e.target.value)}
+                        placeholder="Search name, email, campaign..."
+                        className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#f97316]/30 focus:border-[#f97316]"
+                      />
+                    </div>
+
+                    {/* Template Filter */}
+                    <select
+                      value={templateFilter}
+                      onChange={(e) => setTemplateFilter(e.target.value)}
+                      className={`px-2 py-1.5 border rounded-lg text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#f97316]/30 focus:border-[#f97316] ${
+                        templateFilter !== "all"
+                          ? "border-[#f97316] bg-orange-50 text-[#f97316] font-medium"
+                          : "border-gray-200 bg-white text-gray-600"
+                      }`}
+                    >
+                      <option value="all">All Templates</option>
+                      {uniqueTemplates.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+
+                    {/* Pipeline Filter */}
+                    <select
+                      value={pipelineFilter}
+                      onChange={(e) => setPipelineFilter(e.target.value)}
+                      className={`px-2 py-1.5 border rounded-lg text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#f97316]/30 focus:border-[#f97316] ${
+                        pipelineFilter !== "all"
+                          ? "border-[#f97316] bg-orange-50 text-[#f97316] font-medium"
+                          : "border-gray-200 bg-white text-gray-600"
+                      }`}
+                    >
+                      <option value="all">All Stages</option>
+                      {pipelineStages.map((stage) => {
+                        const ml = getMarketingLabel(stage.key);
+                        return (
+                          <option key={stage.key} value={stage.key}>
+                            {ml.term} ({stage.label})
+                          </option>
+                        );
+                      })}
+                    </select>
+
+                    {/* Sort */}
+                    <button
+                      onClick={() => setEventSort(eventSort === "newest" ? "oldest" : "newest")}
+                      className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 cursor-pointer transition-colors"
+                      title={`Sort by ${eventSort === "newest" ? "oldest" : "newest"} first`}
+                    >
+                      <ArrowUpDown className="w-3 h-3" />
+                      {eventSort === "newest" ? "Newest" : "Oldest"}
+                    </button>
+                  </div>
+
+                  {/* Event Filters Row 2: Type chips */}
+                  <div className="flex items-center gap-1 mb-3">
+                    {[
+                      { key: "all", label: "All", color: "text-gray-600 bg-gray-100" },
+                      { key: "sent", label: "Sent", color: "text-blue-600 bg-blue-50" },
+                      { key: "open", label: "Opens", color: "text-green-600 bg-green-50" },
+                      { key: "click", label: "Clicks", color: "text-purple-600 bg-purple-50" },
+                      { key: "unsubscribe", label: "Unsub", color: "text-red-600 bg-red-50" },
+                    ].map((f) => (
+                      <button
+                        key={f.key}
+                        onClick={() => { setEventFilter(f.key); setActiveStatCard(null); }}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all cursor-pointer ${
+                          eventFilter === f.key && !activeStatCard
+                            ? `${f.color} ring-1 ring-current`
+                            : "text-gray-400 bg-gray-50 hover:bg-gray-100"
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Active filter indicator */}
+                  {hasActiveFilters && (
+                    <div className="flex items-center gap-2 mb-3 text-[10px] flex-wrap">
+                      <Filter className="w-3 h-3 text-[#f97316]" />
+                      <span className="text-gray-500">
+                        Showing {filteredEvents.length} of {recentEvents.length} events
+                        {activeStatCard && <span className="font-medium text-[#f97316]"> — {activeStatCard}</span>}
+                        {templateFilter !== "all" && <span className="font-medium text-[#f97316]"> — template: {templateFilter}</span>}
+                        {pipelineFilter !== "all" && (
+                          <span className="font-medium text-[#f97316]"> — stage: {getMarketingLabel(pipelineFilter).term}</span>
+                        )}
+                      </span>
+                      <button
+                        onClick={() => { setActiveStatCard(null); setEventFilter("all"); setEventSearch(""); setTemplateFilter("all"); setPipelineFilter("all"); }}
+                        className="text-[#f97316] hover:underline cursor-pointer font-medium"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Events List */}
+                  {filteredEvents.length === 0 ? (
+                    <div className="text-center py-10">
+                      <Mail className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">
+                        {eventSearch || eventFilter !== "all" || activeStatCard
+                          ? "No events match your filters"
+                          : "No events recorded yet"}
+                      </p>
+                      {(eventSearch || eventFilter !== "all" || activeStatCard) && (
+                        <button
+                          onClick={() => { setActiveStatCard(null); setEventFilter("all"); setEventSearch(""); }}
+                          className="text-xs text-[#f97316] hover:underline mt-1 cursor-pointer"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
                   ) : (
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {recentEvents.map((event) => {
+                    <div className="space-y-1 max-h-[420px] overflow-y-auto">
+                      {filteredEvents.map((event) => {
                         const config = EVENT_ICONS[event.eventType] || {
                           icon: Mail,
                           color: "text-gray-400",
                         };
                         const Icon = config.icon;
+                        const typeBg = event.eventType === "sent" ? "bg-blue-50" :
+                          event.eventType === "open" ? "bg-green-50" :
+                          event.eventType === "click" ? "bg-purple-50" :
+                          event.eventType === "unsubscribe" ? "bg-red-50" : "bg-gray-50";
                         return (
                           <div
                             key={event._id}
-                            className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors group"
                           >
                             <div className="flex items-center gap-3">
-                              <Icon
-                                className={`w-4 h-4 ${config.color}`}
-                              />
+                              <div className={`w-7 h-7 rounded-full ${typeBg} flex items-center justify-center flex-shrink-0`}>
+                                <Icon className={`w-3.5 h-3.5 ${config.color}`} />
+                              </div>
                               <div>
-                                <p className="text-sm font-medium text-[#1a1a2e] truncate max-w-[180px]">
+                                <p className="text-sm font-medium text-[#1a1a2e] truncate max-w-[200px]">
                                   {event.inquiryId?.fullName || event.email}
                                 </p>
-                                <p className="text-xs text-gray-400">
-                                  {event.eventType}{" "}
-                                  {event.campaignName
-                                    ? `- ${event.campaignName}`
-                                    : ""}
-                                </p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${typeBg} ${config.color}`}>
+                                    {event.eventType}
+                                  </span>
+                                  {event.inquiryId?.pipelineStage && (
+                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">
+                                      {getMarketingLabel(event.inquiryId.pipelineStage).term}
+                                    </span>
+                                  )}
+                                  {event.campaignName && (
+                                    <span className="text-[10px] text-gray-400 truncate max-w-[140px]">
+                                      {event.campaignName}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-xs text-gray-400">
-                                {new Date(
-                                  event.eventTimestamp
-                                ).toLocaleDateString("en-IN")}
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-xs text-gray-500">
+                                {new Date(event.eventTimestamp).toLocaleDateString("en-IN")}
                               </p>
                               <p className="text-[10px] text-gray-300">
-                                {new Date(
-                                  event.eventTimestamp
-                                ).toLocaleTimeString("en-IN", {
+                                {new Date(event.eventTimestamp).toLocaleTimeString("en-IN", {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })}
@@ -671,7 +941,8 @@ export default function EmailPage() {
             </>
           )}
         </>
-      )}
+        );
+      })()}
 
       {/* ═══════════ CREATE GROUP MODAL ═══════════ */}
       {showCreateModal && (
@@ -802,9 +1073,14 @@ function AutomationRow({
             className="w-3 h-3 rounded-full flex-shrink-0"
             style={{ backgroundColor: stage.color }}
           />
-          <span className="text-sm font-semibold text-[#1a1a2e]">
-            {stage.label}
-          </span>
+          <div>
+            <span className="text-sm font-semibold text-[#1a1a2e]">
+              {stage.label}
+            </span>
+            <span className="block text-[10px] text-gray-400">
+              {getMarketingLabel(stage.key).term}
+            </span>
+          </div>
         </div>
 
         {/* Template selector */}

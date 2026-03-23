@@ -68,7 +68,7 @@ const navItems = [
     icon: Star,
   },
   {
-    label: "Context",
+    label: "Contacts",
     href: "/admin/kanban",
     icon: Columns3,
   },

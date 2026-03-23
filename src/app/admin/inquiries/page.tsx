@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Loader2,
@@ -14,155 +14,82 @@ import {
   Clock,
   Activity,
 } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
+import {
+  useGetInquiriesQuery,
+  useGetInquiryStatsQuery,
+  useUpdateInquiryMutation,
+  useDeleteInquiryMutation,
+  useDeleteMultipleInquiriesMutation,
+} from "@/store/endpoints/inquiries";
+import { useGetScoringConfigQuery } from "@/store/endpoints/scoringConfig";
+import { useLazyGetEngagementQuery } from "@/store/endpoints/engagement";
+import type { Inquiry } from "@/store/endpoints/inquiries";
 
-interface ActivityLogEntry {
-  event: string;
-  scoreAdded: number;
-  timestamp: string;
-}
+// Digital marketing terminology mapped to pipeline stage keys
+const MARKETING_LABELS: Record<string, { term: string; description: string }> = {
+  new: { term: "Inquiry", description: "Raw lead — just submitted the form" },
+  engaged: { term: "Lead (MQL)", description: "Marketing Qualified — showing interest" },
+  contacted: { term: "Prospect", description: "In conversation — sales outreach done" },
+  qualified: { term: "Sales Qualified (SQL)", description: "Confirmed buying intent" },
+  negotiation: { term: "Opportunity", description: "Deal in progress — proposal/pricing stage" },
+  won: { term: "Customer", description: "Converted — deal closed" },
+  lost: { term: "Churned", description: "Did not convert — lost opportunity" },
+  converted: { term: "Customer", description: "Converted — paid member" },
+  proposal: { term: "Opportunity", description: "Proposal sent — awaiting decision" },
+  follow_up: { term: "Nurturing", description: "Re-engagement — needs follow-up" },
+};
 
-interface Inquiry {
-  _id: string;
-  fullName: string;
-  companyName: string;
-  email: string;
-  phone: string;
-  city?: string;
-  state?: string;
-  role?: string;
-  teamSize?: string;
-  gstNumber?: string;
-  consentMessages: boolean;
-  consentMarketing: boolean;
-  status: string;
-  engagementScore?: number;
-  pipelineStage?: string;
-  lastActivity?: string;
-  activityLog?: ActivityLogEntry[];
-  notes?: string;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  createdAt: string;
-}
-
-interface PipelineStage {
-  _id: string;
-  key: string;
-  label: string;
-  minScore: number;
-  color: string;
-  order: number;
-}
-
-interface Stats {
-  total: number;
-  new: number;
-  contacted: number;
-  converted: number;
-  hot: number;
-  warm: number;
-  cold: number;
-}
+const getMarketingLabel = (stageKey: string) => {
+  return MARKETING_LABELS[stageKey] || { term: "Lead", description: "In pipeline" };
+};
 
 export default function InquiriesPage() {
   const router = useRouter();
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [stages, setStages] = useState<PipelineStage[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [pipelineFilter, setPipelineFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewInquiry, setViewInquiry] = useState<Inquiry | null>(null);
-  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
-  const [loadingActivity, setLoadingActivity] = useState(false);
   const [updatingPipeline, setUpdatingPipeline] = useState("");
 
-  const fetchStages = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/pm/scoring-config`);
-      const data = await res.json();
-      if (data.statusCode === 200 && data.data.pipelineStages) {
-        const sorted = [...data.data.pipelineStages].sort(
-          (a: PipelineStage, b: PipelineStage) => a.order - b.order
-        );
-        setStages(sorted);
-      }
-    } catch (err) {
-      console.error("Failed to fetch stages:", err);
-    }
-  }, []);
+  // RTK Query hooks — auto-fetch on mount
+  const { data: scoringConfig } = useGetScoringConfigQuery();
+  const { data: inquiriesData, isLoading: loading, refetch: refetchInquiries } = useGetInquiriesQuery({ page, limit: 15 });
+  const { data: stats, refetch: refetchStats } = useGetInquiryStatsQuery();
 
-  const fetchInquiries = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: "15" });
+  // Lazy query — only fires when user clicks "View"
+  const [triggerEngagement, { data: engagementData, isFetching: loadingActivity }] = useLazyGetEngagementQuery();
 
-      const res = await fetch(
-        `${API_BASE_URL}/pm/inquiry?${params.toString()}`
-      );
-      const data = await res.json();
+  // Mutation hooks
+  const [updateInquiry] = useUpdateInquiryMutation();
+  const [deleteInquiry] = useDeleteInquiryMutation();
+  const [deleteMultiple] = useDeleteMultipleInquiriesMutation();
 
-      if (data.statusCode === 200) {
-        setInquiries(data.data.inquiries);
-        setTotalPages(data.data.totalPages);
-      }
-    } catch (err) {
-      console.error("Failed to fetch inquiries:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [page]);
+  // Derive data from query results
+  const stages = scoringConfig?.pipelineStages
+    ? [...scoringConfig.pipelineStages].sort((a, b) => a.order - b.order)
+    : [];
+  const inquiries = inquiriesData?.inquiries || [];
+  const totalPages = inquiriesData?.totalPages || 1;
+  const activityLog = engagementData?.activityLog || [];
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/pm/inquiry/stats`);
-      const data = await res.json();
-      if (data.statusCode === 200) {
-        setStats(data.data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch stats:", err);
-    }
-  }, []);
-
+  // Auth check
   useEffect(() => {
     fetch("/api/admin/verify").then((res) => {
       if (!res.ok) router.push("/admin/login");
     });
   }, [router]);
 
-  useEffect(() => {
-    fetchStages();
-  }, [fetchStages]);
-
-  useEffect(() => {
-    fetchInquiries();
-    fetchStats();
-  }, [fetchInquiries, fetchStats]);
-
   const handleUpdatePipeline = async (id: string, pipelineStage: string) => {
     setUpdatingPipeline(id);
-    // Optimistic update
-    setInquiries((prev) =>
-      prev.map((i) => (i._id === id ? { ...i, pipelineStage } : i))
-    );
+    // Update the viewInquiry locally if it's the one being changed
     if (viewInquiry?._id === id) {
       setViewInquiry({ ...viewInquiry, pipelineStage });
     }
     try {
-      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pipelineStage }),
-      });
+      await updateInquiry({ id, pipelineStage }).unwrap();
     } catch (err) {
       console.error("Failed to update pipeline:", err);
-      fetchInquiries();
     } finally {
       setUpdatingPipeline("");
     }
@@ -171,11 +98,7 @@ export default function InquiriesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this inquiry?")) return;
     try {
-      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
-        method: "DELETE",
-      });
-      fetchInquiries();
-      fetchStats();
+      await deleteInquiry(id).unwrap();
       if (viewInquiry?._id === id) setViewInquiry(null);
     } catch (err) {
       console.error("Failed to delete:", err);
@@ -183,19 +106,10 @@ export default function InquiriesPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (
-      !confirm(`Are you sure you want to delete ${selectedIds.length} inquiries?`)
-    )
-      return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} inquiries?`)) return;
     try {
-      await fetch(`${API_BASE_URL}/pm/inquiry/delete-multiple`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedIds }),
-      });
+      await deleteMultiple({ ids: selectedIds }).unwrap();
       setSelectedIds([]);
-      fetchInquiries();
-      fetchStats();
     } catch (err) {
       console.error("Failed to bulk delete:", err);
     }
@@ -203,35 +117,15 @@ export default function InquiriesPage() {
 
   const handleUpdateNotes = async (id: string, notes: string) => {
     try {
-      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
-      });
+      await updateInquiry({ id, notes }).unwrap();
     } catch (err) {
       console.error("Failed to update notes:", err);
     }
   };
 
-  const fetchActivityLog = async (inquiryId: string) => {
-    setLoadingActivity(true);
-    setActivityLog([]);
-    try {
-      const res = await fetch(`${API_BASE_URL}/pm/engagement/${inquiryId}`);
-      const data = await res.json();
-      if (data.statusCode === 200 && data.data?.activityLog) {
-        setActivityLog(data.data.activityLog);
-      }
-    } catch (err) {
-      console.error("Failed to fetch activity log:", err);
-    } finally {
-      setLoadingActivity(false);
-    }
-  };
-
   const handleViewInquiry = (inquiry: Inquiry) => {
     setViewInquiry(inquiry);
-    fetchActivityLog(inquiry._id);
+    triggerEngagement(inquiry._id);
   };
 
   const toggleSelectAll = () => {
@@ -371,8 +265,8 @@ export default function InquiriesPage() {
             )}
             <button
               onClick={() => {
-                fetchInquiries();
-                fetchStats();
+                refetchInquiries();
+                refetchStats();
               }}
               className="flex items-center gap-1 px-3 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50 cursor-pointer"
             >
@@ -454,23 +348,28 @@ export default function InquiriesPage() {
                         <ScoreBadge score={inquiry.engagementScore || 0} />
                       </td>
                       <td className="px-4 py-3">
-                        <select
-                          value={stageKey}
-                          onChange={(e) => handleUpdatePipeline(inquiry._id, e.target.value)}
-                          disabled={updatingPipeline === inquiry._id}
-                          className="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer uppercase tracking-wide appearance-none pr-6"
-                          style={{
-                            backgroundColor: stageColor + "18",
-                            color: stageColor,
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(stageColor)}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-                            backgroundRepeat: "no-repeat",
-                            backgroundPosition: "right 6px center",
-                          }}
-                        >
-                          {stages.map((s) => (
-                            <option key={s.key} value={s.key}>{s.label}</option>
-                          ))}
-                        </select>
+                        <div className="flex flex-col gap-0.5">
+                          <select
+                            value={stageKey}
+                            onChange={(e) => handleUpdatePipeline(inquiry._id, e.target.value)}
+                            disabled={updatingPipeline === inquiry._id}
+                            className="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer uppercase tracking-wide appearance-none pr-6"
+                            style={{
+                              backgroundColor: stageColor + "18",
+                              color: stageColor,
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(stageColor)}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "right 6px center",
+                            }}
+                          >
+                            {stages.map((s) => (
+                              <option key={s.key} value={s.key}>{s.label}</option>
+                            ))}
+                          </select>
+                          <span className="text-[10px] text-gray-400 font-medium pl-1">
+                            {getMarketingLabel(stageKey).term}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                         {formatDate(inquiry.createdAt)}
@@ -570,7 +469,7 @@ export default function InquiriesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Pipeline Stage</p>
-                  <div className="mt-1">
+                  <div className="mt-1 flex items-center gap-2">
                     <select
                       value={viewInquiry.pipelineStage || "new"}
                       onChange={(e) => handleUpdatePipeline(viewInquiry._id, e.target.value)}
@@ -588,7 +487,13 @@ export default function InquiriesPage() {
                         <option key={s.key} value={s.key}>{s.label}</option>
                       ))}
                     </select>
+                    <span className="text-[10px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {getMarketingLabel(viewInquiry.pipelineStage || "new").term}
+                    </span>
                   </div>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {getMarketingLabel(viewInquiry.pipelineStage || "new").description}
+                  </p>
                 </div>
                 {viewInquiry.lastActivity && (
                   <div>
@@ -709,12 +614,13 @@ function eventLabel(key: string): string {
   return EVENT_LABELS[key] || key.replace(/_/g, " ");
 }
 
-function DetailRow({ label, value }: { label: string; value?: string }) {
+function DetailRow({ label, value }: { label: string; value?: string | boolean }) {
+  const display = typeof value === "boolean" ? (value ? "Yes" : "No") : value;
   return (
     <div>
       <p className="text-xs text-gray-400 uppercase tracking-wide">{label}</p>
       <p className="text-sm text-[#1a1a2e] font-medium mt-0.5">
-        {value || "-"}
+        {display || "-"}
       </p>
     </div>
   );
