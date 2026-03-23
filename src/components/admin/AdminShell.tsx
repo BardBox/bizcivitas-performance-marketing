@@ -11,11 +11,35 @@ import {
   Columns3,
   Mail,
   FileText,
+  Plug,
   LogOut,
   Menu,
   X,
+  Zap,
+  Globe,
+  Server,
+  Database,
+  Cloud,
+  MessageSquare,
+  BarChart,
+  Shield,
+  Bot,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { API_BASE_URL } from "@/lib/api";
+
+// Map icon name strings to lucide components
+const ICON_MAP: Record<string, React.ElementType> = {
+  Plug, Zap, Globe, Server, Database, Cloud,
+  Mail, MessageSquare, CreditCard, BarChart, Shield, Bot,
+};
+
+interface PluginNav {
+  name: string;
+  slug: string;
+  icon: string;
+  color: string;
+}
 
 const navItems = [
   {
@@ -63,6 +87,11 @@ const navItems = [
     href: "/admin/templates",
     icon: FileText,
   },
+  {
+    label: "API",
+    href: "/admin/api-integrations",
+    icon: Plug,
+  },
 ];
 
 export default function AdminShell({
@@ -73,6 +102,16 @@ export default function AdminShell({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pluginNavItems, setPluginNavItems] = useState<PluginNav[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/pm/api-plugins/nav`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setPluginNavItems(data.data);
+      })
+      .catch(() => {});
+  }, []);
 
   // Don't show sidebar on login page
   if (pathname === "/admin/login") {
@@ -121,7 +160,7 @@ export default function AdminShell({
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -140,6 +179,35 @@ export default function AdminShell({
               </a>
             );
           })}
+
+          {/* Dynamic plugin nav items */}
+          {pluginNavItems.length > 0 && (
+            <>
+              <div className="pt-3 pb-1 px-3">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Plugins</p>
+              </div>
+              {pluginNavItems.map((p) => {
+                const href = `/admin/plugins/${p.slug}`;
+                const isActive = pathname === href;
+                const Icon = ICON_MAP[p.icon] || Plug;
+                return (
+                  <a
+                    key={p.slug}
+                    href={href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-[#f97316] text-white"
+                        : "text-gray-300 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" style={!isActive ? { color: p.color } : undefined} />
+                    {p.name}
+                  </a>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         {/* Logout */}

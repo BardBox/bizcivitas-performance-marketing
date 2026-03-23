@@ -26,24 +26,48 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
+
     try {
       const statsRes = await fetch(`${API_BASE_URL}/pm/inquiry/stats`);
+      if (!statsRes.ok) {
+        const text = await statsRes.text();
+        throw new Error(`API error ${statsRes.status}: ${text}`);
+      }
+
       const statsData = await statsRes.json();
-      if (statsData.statusCode === 200) setStats(statsData.data);
-    } catch (err) {
+      if (statsData.statusCode === 200) {
+        setStats(statsData.data);
+      } else {
+        throw new Error(`Unexpected payload status: ${statsData.statusCode}`);
+      }
+    } catch (err: unknown) {
       console.error("Failed to fetch data:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch data. Ensure the backend API is running and accessible."
+      );
+      setStats(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetch("/api/admin/verify").then((res) => {
-      if (!res.ok) router.push("/admin/login");
-    });
+    fetch("/api/admin/verify")
+      .then((res) => {
+        if (!res.ok) router.push("/admin/login");
+      })
+      .catch((err) => {
+        console.error("Verify endpoint error:", err);
+        router.push("/admin/login");
+      });
+
     fetchData();
   }, [router, fetchData]);
 
@@ -58,6 +82,19 @@ export default function AdminDashboard() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold text-[#1a1a2e] mb-6">Dashboard</h1>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-400 bg-red-50 p-4 text-red-800">
+          <p className="font-semibold">Unable to load dashboard stats</p>
+          <p className="text-sm mt-1">{error}</p>
+          <button
+            className="mt-3 rounded-md bg-red-600 px-3 py-1 text-white hover:bg-red-700"
+            onClick={fetchData}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {stats && (
         <>
