@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AdminShell from "@/components/admin/AdminShell";
+import StoreProvider from "@/store/StoreProvider";
 
 export const metadata: Metadata = {
   title: "Admin - BizCivitas Performance Marketing",
@@ -11,5 +12,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminShell>{children}</AdminShell>;
+  return<StoreProvider>
+  <AdminShell>{children}</AdminShell>
+</StoreProvider>;
 }

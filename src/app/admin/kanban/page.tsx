@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Loader2,
@@ -10,47 +10,31 @@ import {
   RefreshCw,
   GripVertical,
 } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
+import {
+  useGetInquiriesQuery,
+  useUpdateInquiryMutation,
+} from "@/store/endpoints/inquiries";
+import { useGetScoringConfigQuery } from "@/store/endpoints/scoringConfig";
+import { useLazyGetEngagementQuery } from "@/store/endpoints/engagement";
+import type { Inquiry } from "@/store/endpoints/inquiries";
 
-interface ActivityLogEntry {
-  event: string;
-  scoreAdded: number;
-  timestamp: string;
-}
+// Digital marketing terminology mapped to pipeline stage keys
+const MARKETING_LABELS: Record<string, { term: string; description: string }> = {
+  new: { term: "Inquiry", description: "Raw lead — just submitted the form" },
+  engaged: { term: "Lead (MQL)", description: "Marketing Qualified — showing interest" },
+  contacted: { term: "Prospect", description: "In conversation — sales outreach done" },
+  qualified: { term: "Sales Qualified (SQL)", description: "Confirmed buying intent" },
+  negotiation: { term: "Opportunity", description: "Deal in progress — proposal/pricing stage" },
+  won: { term: "Customer", description: "Converted — deal closed" },
+  lost: { term: "Churned", description: "Did not convert — lost opportunity" },
+  converted: { term: "Customer", description: "Converted — paid member" },
+  proposal: { term: "Opportunity", description: "Proposal sent — awaiting decision" },
+  follow_up: { term: "Nurturing", description: "Re-engagement — needs follow-up" },
+};
 
-interface Inquiry {
-  _id: string;
-  fullName: string;
-  companyName: string;
-  email: string;
-  phone: string;
-  city?: string;
-  state?: string;
-  role?: string;
-  teamSize?: string;
-  gstNumber?: string;
-  consentMessages: boolean;
-  consentMarketing: boolean;
-  status: string;
-  engagementScore?: number;
-  pipelineStage?: string;
-  lastActivity?: string;
-  activityLog?: ActivityLogEntry[];
-  notes?: string;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  createdAt: string;
-}
-
-interface PipelineStage {
-  _id: string;
-  key: string;
-  label: string;
-  minScore: number;
-  color: string;
-  order: number;
-}
+const getMarketingLabel = (stageKey: string) => {
+  return MARKETING_LABELS[stageKey] || { term: "Lead", description: "In pipeline" };
+};
 
 const EVENT_LABELS: Record<string, string> = {
   page_visit: "Page Visit",
@@ -72,91 +56,48 @@ function eventLabel(key: string): string {
 
 export default function KanbanPage() {
   const router = useRouter();
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [stages, setStages] = useState<PipelineStage[]>([]);
-  const [loading, setLoading] = useState(true);
   const [viewInquiry, setViewInquiry] = useState<Inquiry | null>(null);
-  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
-  const [loadingActivity, setLoadingActivity] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState("");
+  const [movingInquiryId, setMovingInquiryId] = useState<string | null>(null);
 
   // Drag-and-drop state
   const [draggedInquiry, setDraggedInquiry] = useState<Inquiry | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<string | null>(null);
-  const [movingInquiryId, setMovingInquiryId] = useState<string | null>(null);
   const dragCounterRef = useRef<Record<string, number>>({});
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [inquiryRes, configRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/pm/inquiry?page=1&limit=500`),
-        fetch(`${API_BASE_URL}/pm/scoring-config`),
-      ]);
-      const inquiryData = await inquiryRes.json();
-      const configData = await configRes.json();
+  // RTK Query hooks
+  const { data: inquiriesData, isLoading: loading, refetch: refetchAll } = useGetInquiriesQuery({ page: 1, limit: 500 });
+  const { data: scoringConfig } = useGetScoringConfigQuery();
+  const [triggerEngagement, { data: engagementData, isFetching: loadingActivity }] = useLazyGetEngagementQuery();
+  const [updateInquiry] = useUpdateInquiryMutation();
 
-      if (inquiryData.statusCode === 200) {
-        // Exclude converted/paid members — they are on the Members page
-        const nonConverted = inquiryData.data.inquiries.filter(
-          (i: Inquiry) => i.status !== "converted"
-        );
-        setInquiries(nonConverted);
-      }
-      if (configData.statusCode === 200 && configData.data.pipelineStages) {
-        const sorted = [...configData.data.pipelineStages].sort(
-          (a: PipelineStage, b: PipelineStage) => a.order - b.order
-        );
-        setStages(sorted);
-      }
-    } catch (err) {
-      console.error("Failed to fetch:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Derive data from query results
+  const stages = scoringConfig?.pipelineStages
+    ? [...scoringConfig.pipelineStages].sort((a, b) => a.order - b.order)
+    : [];
+  // Exclude converted/paid members — they are on the Members page
+  const inquiries = (inquiriesData?.inquiries || []).filter(
+    (i) => i.status !== "converted"
+  );
+  const activityLog = engagementData?.activityLog || [];
 
+  // Auth check
   useEffect(() => {
     fetch("/api/admin/verify").then((res) => {
       if (!res.ok) router.push("/admin/login");
     });
   }, [router]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const fetchActivityLog = async (inquiryId: string) => {
-    setLoadingActivity(true);
-    setActivityLog([]);
-    try {
-      const res = await fetch(`${API_BASE_URL}/pm/engagement/${inquiryId}`);
-      const data = await res.json();
-      if (data.statusCode === 200 && data.data?.activityLog) {
-        setActivityLog(data.data.activityLog);
-      }
-    } catch (err) {
-      console.error("Failed to fetch activity:", err);
-    } finally {
-      setLoadingActivity(false);
-    }
-  };
-
   const handleViewInquiry = (inquiry: Inquiry) => {
     setViewInquiry(inquiry);
-    fetchActivityLog(inquiry._id);
+    triggerEngagement(inquiry._id);
   };
 
   const handleUpdateStatus = async (id: string, status: string) => {
     setUpdatingStatus(id);
     try {
-      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      fetchData();
+      await updateInquiry({ id, status }).unwrap();
       if (viewInquiry?._id === id) {
         setViewInquiry({ ...viewInquiry, status });
       }
@@ -169,43 +110,22 @@ export default function KanbanPage() {
 
   const handleUpdateNotes = async (id: string, notes: string) => {
     try {
-      await fetch(`${API_BASE_URL}/pm/inquiry/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
-      });
+      await updateInquiry({ id, notes }).unwrap();
     } catch (err) {
       console.error("Failed to update notes:", err);
     }
   };
 
-  // Move inquiry to a new pipeline stage (API + optimistic update)
+  // Move inquiry to a new pipeline stage via RTK Query mutation
+  // The optimistic update is handled by onQueryStarted in the endpoint definition
   const moveInquiryToStage = async (inquiry: Inquiry, newStageKey: string) => {
     if ((inquiry.pipelineStage || "new") === newStageKey) return;
 
     setMovingInquiryId(inquiry._id);
-
-    // Optimistic update
-    setInquiries((prev) =>
-      prev.map((i) =>
-        i._id === inquiry._id ? { ...i, pipelineStage: newStageKey } : i
-      )
-    );
-
     try {
-      await fetch(`${API_BASE_URL}/pm/inquiry/${inquiry._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pipelineStage: newStageKey }),
-      });
+      await updateInquiry({ id: inquiry._id, pipelineStage: newStageKey }).unwrap();
     } catch (err) {
       console.error("Failed to move inquiry:", err);
-      // Revert on failure
-      setInquiries((prev) =>
-        prev.map((i) =>
-          i._id === inquiry._id ? { ...i, pipelineStage: inquiry.pipelineStage } : i
-        )
-      );
     } finally {
       setMovingInquiryId(null);
     }
@@ -216,7 +136,6 @@ export default function KanbanPage() {
     setDraggedInquiry(inquiry);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", inquiry._id);
-    // Add a slight delay so the drag image captures the card
     setTimeout(() => {
       const el = document.getElementById(`card-${inquiry._id}`);
       if (el) el.style.opacity = "0.4";
@@ -291,7 +210,7 @@ export default function KanbanPage() {
           </p>
         </div>
         <button
-          onClick={fetchData}
+          onClick={() => refetchAll()}
           className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
         >
           <RefreshCw className="w-4 h-4" />
@@ -307,7 +226,7 @@ export default function KanbanPage() {
 
           return (
             <div
-              key={stage._id}
+              key={stage.key}
               className={`flex-shrink-0 w-[300px] rounded-xl border-2 transition-all duration-200 ${
                 isDropTarget
                   ? "border-dashed scale-[1.01] shadow-lg"
@@ -332,12 +251,17 @@ export default function KanbanPage() {
                     className="w-2.5 h-2.5 rounded-full"
                     style={{ backgroundColor: stage.color }}
                   />
-                  <span
-                    className="text-sm font-semibold"
-                    style={{ color: stage.color }}
-                  >
-                    {stage.label}
-                  </span>
+                  <div className="flex flex-col">
+                    <span
+                      className="text-sm font-semibold leading-tight"
+                      style={{ color: stage.color }}
+                    >
+                      {stage.label}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-medium leading-tight">
+                      {getMarketingLabel(stage.key).term}
+                    </span>
+                  </div>
                 </div>
                 <span
                   className="text-xs font-bold px-2 py-0.5 rounded-full"
@@ -495,15 +419,23 @@ export default function KanbanPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Pipeline Stage</p>
-                  <span
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide inline-block mt-1"
-                    style={{
-                      backgroundColor: (stages.find((s) => s.key === viewInquiry.pipelineStage)?.color || "#6b7280") + "20",
-                      color: stages.find((s) => s.key === viewInquiry.pipelineStage)?.color || "#6b7280",
-                    }}
-                  >
-                    {viewInquiry.pipelineStage || "new"}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide inline-block"
+                      style={{
+                        backgroundColor: (stages.find((s) => s.key === viewInquiry.pipelineStage)?.color || "#6b7280") + "20",
+                        color: stages.find((s) => s.key === viewInquiry.pipelineStage)?.color || "#6b7280",
+                      }}
+                    >
+                      {viewInquiry.pipelineStage || "new"}
+                    </span>
+                    <span className="text-[10px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {getMarketingLabel(viewInquiry.pipelineStage || "new").term}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {getMarketingLabel(viewInquiry.pipelineStage || "new").description}
+                  </p>
                 </div>
                 {viewInquiry.lastActivity && (
                   <div>

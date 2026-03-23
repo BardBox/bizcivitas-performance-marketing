@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Loader2,
@@ -10,53 +10,11 @@ import {
   Phone,
   Users,
 } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
-
-interface Stats {
-  total: number;
-  new: number;
-  contacted: number;
-  converted: number;
-  hot: number;
-  warm: number;
-  cold: number;
-}
+import { useGetInquiryStatsQuery } from "@/store/endpoints/inquiries";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const statsRes = await fetch(`${API_BASE_URL}/pm/inquiry/stats`);
-      if (!statsRes.ok) {
-        const text = await statsRes.text();
-        throw new Error(`API error ${statsRes.status}: ${text}`);
-      }
-
-      const statsData = await statsRes.json();
-      if (statsData.statusCode === 200) {
-        setStats(statsData.data);
-      } else {
-        throw new Error(`Unexpected payload status: ${statsData.statusCode}`);
-      }
-    } catch (err: unknown) {
-      console.error("Failed to fetch data:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to fetch data. Ensure the backend API is running and accessible."
-      );
-      setStats(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: stats, isLoading: loading, error } = useGetInquiryStatsQuery();
 
   useEffect(() => {
     fetch("/api/admin/verify")
@@ -67,9 +25,7 @@ export default function AdminDashboard() {
         console.error("Verify endpoint error:", err);
         router.push("/admin/login");
       });
-
-    fetchData();
-  }, [router, fetchData]);
+  }, [router]);
 
   if (loading) {
     return (
@@ -86,13 +42,7 @@ export default function AdminDashboard() {
       {error && (
         <div className="mb-4 rounded-lg border border-red-400 bg-red-50 p-4 text-red-800">
           <p className="font-semibold">Unable to load dashboard stats</p>
-          <p className="text-sm mt-1">{error}</p>
-          <button
-            className="mt-3 rounded-md bg-red-600 px-3 py-1 text-white hover:bg-red-700"
-            onClick={fetchData}
-          >
-            Retry
-          </button>
+          <p className="text-sm mt-1">Failed to fetch dashboard data</p>
         </div>
       )}
 
