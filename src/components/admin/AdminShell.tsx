@@ -21,6 +21,7 @@ import {
   Database,
   Cloud,
   MessageSquare,
+  MessageCircle,
   BarChart,
   Shield,
   Bot,
@@ -81,6 +82,11 @@ const navItems = [
     label: "Email",
     href: "/admin/email",
     icon: Mail,
+  },
+  {
+    label: "WhatsApp",
+    href: "/admin/whatsapp",
+    icon: MessageCircle,
   },
   {
     label: "Templates",

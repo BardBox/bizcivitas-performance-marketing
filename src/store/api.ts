@@ -20,6 +20,11 @@ export const api = createApi({
     "ApiPlugin",
     "PluginNav",
     "Engagement",
+    "WhatsappTemplate",
+    "WhatsappTemplateList",
+    "WhatsappAutomation",
+    "WhatsappAutomationGroup",
+    "WhatsappReport",
   ],
   endpoints: () => ({}),
 });

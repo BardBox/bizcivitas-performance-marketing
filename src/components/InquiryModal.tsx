@@ -92,6 +92,14 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
 
       setSubmitted(true);
 
+      // Save inquiry ID for return visits (email/WhatsApp redirects)
+      if (inquiryId) {
+        try {
+          localStorage.setItem("pm_inquiry_id", inquiryId);
+          localStorage.setItem("pm_inquiry_email", formData.email);
+        } catch { /* silent */ }
+      }
+
       // Redirect to Razorpay checkout page after short delay
       setTimeout(() => {
         setFormData({
