@@ -15,6 +15,7 @@ import {
   Users,
   User,
   Mail,
+  MessageCircle,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
@@ -317,21 +318,30 @@ export default function TemplatesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1a2e]">Email Templates</h1>
+          <h1 className="text-2xl font-bold text-[#1a1a2e]">Templates</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Create and manage email templates for MailerLite campaigns
+            Create and manage email & WhatsApp templates
           </p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowEditor(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#f97316] hover:bg-[#ea580c] text-white text-sm font-medium transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          New Template
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href="/admin/templates/whatsapp"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-sm font-medium transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" />
+            WhatsApp Templates
+          </a>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowEditor(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#f97316] hover:bg-[#ea580c] text-white text-sm font-medium transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            New Email Template
+          </button>
+        </div>
       </div>
 
       {/* Templates Grid */}

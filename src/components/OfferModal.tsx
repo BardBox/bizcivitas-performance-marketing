@@ -9,8 +9,14 @@ export default function OfferModal() {
   const [showForm, setShowForm] = useState(false);
   const [hasAutoShown, setHasAutoShown] = useState(false);
 
-  // Auto-trigger after 5 seconds on first visit
+  // Auto-trigger after 2 seconds on first visit
+  // Skip if returning visitor from email/WhatsApp with existing inquiry (they'll see redirect overlay instead)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isFromCampaign = params.get("utm_source") || params.get("utm_medium");
+    const hasInquiry = params.get("inquiry_id") || localStorage.getItem("pm_inquiry_id");
+    if (isFromCampaign && hasInquiry) return; // ReturnVisitorRedirect handles this
+
     const timer = setTimeout(() => {
       if (!hasAutoShown) {
         setIsOpen(true);

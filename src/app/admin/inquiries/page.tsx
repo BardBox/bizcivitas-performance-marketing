@@ -13,6 +13,10 @@ import {
   Eye,
   Clock,
   Activity,
+  Mail,
+  MessageCircle,
+  ChevronDown,
+  Send,
 } from "lucide-react";
 import {
   useGetInquiriesQuery,
@@ -24,6 +28,7 @@ import {
 import { useGetScoringConfigQuery } from "@/store/endpoints/scoringConfig";
 import { useLazyGetEngagementQuery } from "@/store/endpoints/engagement";
 import type { Inquiry } from "@/store/endpoints/inquiries";
+import { API_BASE_URL } from "@/lib/api";
 
 // Digital marketing terminology mapped to pipeline stage keys
 const MARKETING_LABELS: Record<string, { term: string; description: string }> = {
@@ -52,6 +57,17 @@ export default function InquiriesPage() {
   const [viewInquiry, setViewInquiry] = useState<Inquiry | null>(null);
   const [updatingPipeline, setUpdatingPipeline] = useState("");
 
+  // Send accordions state
+  const [emailAccOpen, setEmailAccOpen] = useState(false);
+  const [waAccOpen, setWaAccOpen] = useState(false);
+  const [emailTemplates, setEmailTemplates] = useState<{ _id: string; name: string; subject: string; category: string }[]>([]);
+  const [waTemplates, setWaTemplates] = useState<{ _id: string; name: string; tftTemplateName: string; category: string }[]>([]);
+  const [selectedEmailTpl, setSelectedEmailTpl] = useState("");
+  const [selectedWaTpl, setSelectedWaTpl] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [sendingWa, setSendingWa] = useState(false);
+  const [sendResult, setSendResult] = useState<{ type: string; success: boolean; message: string } | null>(null);
+
   // RTK Query hooks — auto-fetch on mount
   const { data: scoringConfig } = useGetScoringConfigQuery();
   const { data: inquiriesData, isLoading: loading, refetch: refetchInquiries } = useGetInquiriesQuery({ page, limit: 15 });
@@ -79,6 +95,71 @@ export default function InquiriesPage() {
       if (!res.ok) router.push("/admin/login");
     });
   }, [router]);
+
+  // Fetch templates when inquiry modal opens
+  useEffect(() => {
+    if (viewInquiry) {
+      fetch(`${API_BASE_URL}/pm/email-templates`)
+        .then((r) => r.json())
+        .then((d) => { if (d.statusCode === 200) setEmailTemplates(d.data || []); })
+        .catch(() => {});
+      fetch(`${API_BASE_URL}/pm/whatsapp-templates`)
+        .then((r) => r.json())
+        .then((d) => { if (d.statusCode === 200) setWaTemplates(d.data || []); })
+        .catch(() => {});
+      setSendResult(null);
+      setSelectedEmailTpl("");
+      setSelectedWaTpl("");
+      setEmailAccOpen(false);
+      setWaAccOpen(false);
+    }
+  }, [viewInquiry]);
+
+  const handleSendEmail = async () => {
+    if (!selectedEmailTpl || !viewInquiry?.email) return;
+    setSendingEmail(true);
+    setSendResult(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/pm/email-templates/${selectedEmailTpl}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails: [viewInquiry.email] }),
+      });
+      const data = await res.json();
+      setSendResult({
+        type: "email",
+        success: data.statusCode === 200,
+        message: data.message || (data.statusCode === 200 ? "Email sent!" : "Failed to send"),
+      });
+    } catch {
+      setSendResult({ type: "email", success: false, message: "Failed to send email" });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const handleSendWhatsapp = async () => {
+    if (!selectedWaTpl || !viewInquiry?.phone) return;
+    setSendingWa(true);
+    setSendResult(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/pm/whatsapp-templates/${selectedWaTpl}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: viewInquiry.phone, inquiryId: viewInquiry._id }),
+      });
+      const data = await res.json();
+      setSendResult({
+        type: "whatsapp",
+        success: data.statusCode === 200,
+        message: data.message || (data.statusCode === 200 ? "WhatsApp sent!" : "Failed to send"),
+      });
+    } catch {
+      setSendResult({ type: "whatsapp", success: false, message: "Failed to send WhatsApp" });
+    } finally {
+      setSendingWa(false);
+    }
+  };
 
   const handleUpdatePipeline = async (id: string, pipelineStage: string) => {
     setUpdatingPipeline(id);
@@ -570,6 +651,97 @@ export default function InquiriesPage() {
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Send Result */}
+              {sendResult && (
+                <div className={`px-3 py-2 rounded-lg text-xs font-medium ${
+                  sendResult.success ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                }`}>
+                  {sendResult.message}
+                </div>
+              )}
+
+              {/* Send Email Accordion */}
+              <div className="pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => setEmailAccOpen(!emailAccOpen)}
+                  className="flex items-center justify-between w-full py-2 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-[#f97316]" />
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Send Email</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${emailAccOpen ? "rotate-180" : ""}`} />
+                </button>
+                {emailAccOpen && (
+                  <div className="mt-2 space-y-2">
+                    <select
+                      value={selectedEmailTpl}
+                      onChange={(e) => setSelectedEmailTpl(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#f97316]/30 focus:border-[#f97316]"
+                    >
+                      <option value="">Select email template...</option>
+                      {emailTemplates.map((t) => (
+                        <option key={t._id} value={t._id}>{t.name} ({t.category})</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-gray-400">
+                        To: {viewInquiry?.email}
+                      </p>
+                      <button
+                        onClick={handleSendEmail}
+                        disabled={!selectedEmailTpl || sendingEmail}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f97316] hover:bg-[#ea580c] text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {sendingEmail ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                        Send Email
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Send WhatsApp Accordion */}
+              <div className="pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => setWaAccOpen(!waAccOpen)}
+                  className="flex items-center justify-between w-full py-2 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Send WhatsApp</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${waAccOpen ? "rotate-180" : ""}`} />
+                </button>
+                {waAccOpen && (
+                  <div className="mt-2 space-y-2">
+                    <select
+                      value={selectedWaTpl}
+                      onChange={(e) => setSelectedWaTpl(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
+                    >
+                      <option value="">Select WhatsApp template...</option>
+                      {waTemplates.map((t) => (
+                        <option key={t._id} value={t._id}>{t.name} ({t.tftTemplateName})</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-gray-400">
+                        To: {viewInquiry?.phone}
+                      </p>
+                      <button
+                        onClick={handleSendWhatsapp}
+                        disabled={!selectedWaTpl || sendingWa || !viewInquiry?.phone}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#1da851] text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {sendingWa ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                        Send WhatsApp
+                      </button>
                     </div>
                   </div>
                 )}
