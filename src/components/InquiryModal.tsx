@@ -64,6 +64,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
       const res = await fetch(`${API_BASE_URL}/pm/inquiry/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           ...formData,
           utm_source: params.get("utm_source") || undefined,
@@ -72,12 +73,14 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Something went wrong");
-      }
-
       const data = await res.json();
+      if (!res.ok) {
+        const serverMessage = data?.message || data?.error || "Something went wrong";
+        if (res.status === 401) {
+          throw new Error("Unauthorized: check API endpoint or credentials. " + serverMessage);
+        }
+        throw new Error(serverMessage);
+      }
       const inquiryId = data.data?._id;
 
       // Track form_submitted and sync all events to this inquiry
