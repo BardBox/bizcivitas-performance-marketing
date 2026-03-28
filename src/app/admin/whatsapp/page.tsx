@@ -175,6 +175,7 @@ export default function WhatsAppPage() {
   const [templates, setTemplates] = useState<WaTemplate[]>([]);
   const [groups, setGroups] = useState<AutomationGroup[]>([]);
   const [savingStage, setSavingStage] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<{ message: string; ok: boolean } | null>(null);
 
   // Create group modal
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -309,11 +310,16 @@ export default function WhatsAppPage() {
       const data = await res.json();
       if (data.statusCode === 200) {
         await fetchAutomations();
+        setSaveToast({ message: "Automation saved", ok: true });
+      } else {
+        setSaveToast({ message: data.message || "Failed to save", ok: false });
       }
     } catch (err) {
       console.error("Save WhatsApp automation failed:", err);
+      setSaveToast({ message: "Network error — save failed", ok: false });
     } finally {
       setSavingStage(null);
+      setTimeout(() => setSaveToast(null), 3000);
     }
   };
 
@@ -371,6 +377,13 @@ export default function WhatsAppPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {/* Save toast */}
+      {saveToast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl text-sm font-medium shadow-lg transition-all ${saveToast.ok ? "bg-green-600 text-white" : "bg-red-500 text-white"}`}>
+          {saveToast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

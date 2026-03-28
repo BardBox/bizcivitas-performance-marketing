@@ -24,6 +24,7 @@ import {
   useUpdateInquiryMutation,
   useDeleteInquiryMutation,
   useDeleteMultipleInquiriesMutation,
+  useResetInquiryScoreMutation,
 } from "@/store/endpoints/inquiries";
 import { useGetScoringConfigQuery } from "@/store/endpoints/scoringConfig";
 import { useLazyGetEngagementQuery } from "@/store/endpoints/engagement";
@@ -67,6 +68,7 @@ export default function InquiriesPage() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [sendingWa, setSendingWa] = useState(false);
   const [sendResult, setSendResult] = useState<{ type: string; success: boolean; message: string } | null>(null);
+  const [resetConfirmText, setResetConfirmText] = useState("");
 
   // RTK Query hooks — auto-fetch on mount
   const { data: scoringConfig } = useGetScoringConfigQuery();
@@ -80,6 +82,7 @@ export default function InquiriesPage() {
   const [updateInquiry] = useUpdateInquiryMutation();
   const [deleteInquiry] = useDeleteInquiryMutation();
   const [deleteMultiple] = useDeleteMultipleInquiriesMutation();
+  const [resetScore, { isLoading: resettingScore }] = useResetInquiryScoreMutation();
 
   // Derive data from query results
   const stages = scoringConfig?.pipelineStages
@@ -187,12 +190,24 @@ export default function InquiriesPage() {
   };
 
   const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) {
+      alert("Please select at least one inquiry to delete.");
+      return;
+    }
     if (!confirm(`Are you sure you want to delete ${selectedIds.length} inquiries?`)) return;
     try {
       await deleteMultiple({ ids: selectedIds }).unwrap();
       setSelectedIds([]);
+      refetchInquiries();
+      refetchStats();
     } catch (err) {
+      const errMsg =
+        (err as { data?: { message?: string }; error?: string; message?: string })?.data?.message ||
+        (err as { error?: string })?.error ||
+        (err as { message?: string })?.message ||
+        "Failed to bulk delete inquiries";
       console.error("Failed to bulk delete:", err);
+      alert(errMsg);
     }
   };
 
@@ -207,6 +222,14 @@ export default function InquiriesPage() {
   const handleViewInquiry = (inquiry: Inquiry) => {
     setViewInquiry(inquiry);
     triggerEngagement(inquiry._id);
+  };
+
+  const handleResetScore = async () => {
+    if (!viewInquiry) return;
+    if (resetConfirmText !== "sudo delete") return;
+    const updated = await resetScore(viewInquiry._id).unwrap();
+    setViewInquiry({ ...viewInquiry, engagementScore: updated.engagementScore, lastActivity: updated.lastActivity });
+    setResetConfirmText("");
   };
 
   const toggleSelectAll = () => {
@@ -387,6 +410,7 @@ export default function InquiriesPage() {
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Phone</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Location</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Score</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Pipeline</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Date</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
@@ -424,6 +448,25 @@ export default function InquiriesPage() {
                       <td className="px-4 py-3 text-gray-600">{inquiry.phone}</td>
                       <td className="px-4 py-3 text-gray-600">
                         {[inquiry.city, inquiry.state].filter(Boolean).join(", ") || "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {(() => {
+                          const statusColors: Record<string, { bg: string; text: string }> = {
+                            new: { bg: "#e0f2fe", text: "#0369a1" },
+                            contacted: { bg: "#dcfce7", text: "#16a34a" },
+                            converted: { bg: "#f0fdf4", text: "#15803d" },
+                            hot: { bg: "#fee2e2", text: "#dc2626" },
+                            warm: { bg: "#ffedd5", text: "#ea580c" },
+                            cold: { bg: "#f1f5f9", text: "#64748b" },
+                          };
+                          const s = inquiry.status || "new";
+                          const c = statusColors[s] || { bg: "#f3f4f6", text: "#6b7280" };
+                          return (
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide" style={{ backgroundColor: c.bg, color: c.text }}>
+                              {s}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3">
                         <ScoreBadge score={inquiry.engagementScore || 0} />
@@ -514,7 +557,7 @@ export default function InquiriesPage() {
             <div className="bg-[#1a1a2e] rounded-t-2xl px-6 py-4 flex items-center justify-between">
               <h3 className="text-white font-semibold">Inquiry Details</h3>
               <button
-                onClick={() => setViewInquiry(null)}
+                onClick={() => { setViewInquiry(null); setResetConfirmText(""); }}
                 className="text-gray-400 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -759,6 +802,29 @@ export default function InquiriesPage() {
                   rows={3}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f97316] resize-none"
                 />
+              </div>
+
+              {/* Reset Score */}
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-xs text-gray-400 mb-1.5">
+                  Type <span className="font-mono font-semibold text-gray-600">sudo delete</span> to reset engagement score
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={resetConfirmText}
+                    onChange={(e) => setResetConfirmText(e.target.value)}
+                    placeholder="sudo delete"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-300 font-mono"
+                  />
+                  <button
+                    onClick={handleResetScore}
+                    disabled={resettingScore || resetConfirmText !== "sudo delete"}
+                    className="px-4 py-2 rounded-lg border border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    {resettingScore ? "Resetting…" : "Reset Score"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
