@@ -25,9 +25,12 @@ import {
   BarChart,
   Shield,
   Bot,
+  UserCog,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import type { SectionKey } from "@/store/endpoints/adminUsers";
 
 // Map icon name strings to lucide components
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -42,62 +45,23 @@ interface PluginNav {
   color: string;
 }
 
-const navItems = [
-  {
-    label: "Dashboard",
-    href: "/admin",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Inquiries",
-    href: "/admin/inquiries",
-    icon: MessageSquareText,
-  },
-  {
-    label: "Plans",
-    href: "/admin/plans",
-    icon: CreditCard,
-  },
-  {
-    label: "Members",
-    href: "/admin/members",
-    icon: Users,
-  },
-  {
-    label: "Stories",
-    href: "/admin/stories",
-    icon: Star,
-  },
-  {
-    label: "Contacts",
-    href: "/admin/kanban",
-    icon: Columns3,
-  },
-  {
-    label: "Pipeline",
-    href: "/admin/scoring",
-    icon: Gauge,
-  },
-  {
-    label: "Email",
-    href: "/admin/email",
-    icon: Mail,
-  },
-  {
-    label: "WhatsApp",
-    href: "/admin/whatsapp",
-    icon: MessageCircle,
-  },
-  {
-    label: "Templates",
-    href: "/admin/templates",
-    icon: FileText,
-  },
-  {
-    label: "API",
-    href: "/admin/api-integrations",
-    icon: Plug,
-  },
+const navItems: { label: string; href: string; icon: React.ElementType; section: SectionKey }[] = [
+  { label: "Dashboard",      href: "/admin",                  icon: LayoutDashboard,   section: "dashboard"  },
+  { label: "Inquiries",      href: "/admin/inquiries",        icon: MessageSquareText, section: "inquiries"  },
+  { label: "Conversations",  href: "/admin/conversations",    icon: MessageSquare,     section: "inquiries"  },
+  { label: "Plans",          href: "/admin/plans",            icon: CreditCard,        section: "plans"      },
+  { label: "Members",        href: "/admin/members",          icon: Users,             section: "members"    },
+  { label: "Stories",        href: "/admin/stories",          icon: Star,              section: "stories"    },
+  { label: "Contacts",       href: "/admin/kanban",           icon: Columns3,          section: "contacts"   },
+  { label: "Pipeline",       href: "/admin/scoring",          icon: Gauge,             section: "pipeline"   },
+  { label: "Email",          href: "/admin/email",            icon: Mail,              section: "email"      },
+  { label: "WhatsApp",       href: "/admin/whatsapp",         icon: MessageCircle,     section: "whatsapp"   },
+  { label: "Templates",      href: "/admin/templates",        icon: FileText,          section: "templates"  },
+  { label: "API",            href: "/admin/api-integrations", icon: Plug,              section: "api"        },
+];
+
+const superAdminNavItems: { label: string; href: string; icon: React.ElementType }[] = [
+  { label: "Users",      href: "/admin/users",            icon: UserCog },
 ];
 
 export default function AdminShell({
@@ -109,6 +73,7 @@ export default function AdminShell({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pluginNavItems, setPluginNavItems] = useState<PluginNav[]>([]);
+  const { canView, isSuperAdmin } = useAdminPermissions();
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/pm/api-plugins/nav`)
@@ -128,6 +93,8 @@ export default function AdminShell({
     await fetch("/api/admin/logout", { method: "POST" });
     router.push("/admin/login");
   };
+
+  const visibleNavItems = navItems.filter((item) => canView(item.section));
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex">
@@ -167,7 +134,7 @@ export default function AdminShell({
 
         {/* Nav Items */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <a
@@ -212,6 +179,27 @@ export default function AdminShell({
                   </a>
                 );
               })}
+            </>
+          )}
+
+          {/* Super admin only: Users management */}
+          {isSuperAdmin && (
+            <>
+              <div className="pt-3 pb-1 px-3">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Admin</p>
+              </div>
+              <a
+                href="/admin/users"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  pathname === "/admin/users"
+                    ? "bg-[#f97316] text-white"
+                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <UserCog className="w-4 h-4" />
+                Users
+              </a>
             </>
           )}
         </nav>

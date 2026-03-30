@@ -11,8 +11,11 @@ import {
   Users,
 } from "lucide-react";
 import { useGetInquiryStatsQuery } from "@/store/endpoints/inquiries";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
 
 export default function AdminDashboard() {
+  const { canView, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const { data: stats, isLoading: loading, error } = useGetInquiryStatsQuery();
 
@@ -34,6 +37,8 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  if (!permLoading && !canView("dashboard")) return <AccessDenied />;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">

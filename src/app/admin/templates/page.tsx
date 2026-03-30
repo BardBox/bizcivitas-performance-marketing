@@ -20,6 +20,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 interface Template {
   _id: string;
@@ -59,6 +62,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function TemplatesPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -305,6 +309,8 @@ export default function TemplatesPage() {
     }
   };
 
+  if (!permLoading && !canView("templates")) return <AccessDenied />;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -315,6 +321,7 @@ export default function TemplatesPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {!canEdit("templates") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

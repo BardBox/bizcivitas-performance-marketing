@@ -11,6 +11,9 @@ import {
   Check,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 interface Plan {
   _id: string;
@@ -34,6 +37,7 @@ const DURATION_OPTIONS = [
 ];
 
 export default function PlansPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -188,8 +192,11 @@ export default function PlansPage() {
     }
   };
 
+  if (!permLoading && !canView("plans")) return <AccessDenied />;
+
   return (
     <div className="p-6 md:p-8">
+      {!canEdit("plans") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

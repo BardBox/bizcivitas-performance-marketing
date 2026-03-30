@@ -28,6 +28,9 @@ import {
   useDeleteWhatsappTemplateMutation,
   type WhatsappTemplate,
 } from "@/store/endpoints/whatsappTemplates";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 const CATEGORY_COLORS: Record<string, string> = {
   welcome: "bg-green-100 text-green-700",
@@ -90,6 +93,7 @@ const getErrorMessage = (err: unknown, fallback: string) => {
 };
 
 export default function WhatsAppTemplatesPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [showEditor, setShowEditor] = useState(false);
   const [showCreateOnTft, setShowCreateOnTft] = useState(false);
@@ -344,6 +348,8 @@ export default function WhatsAppTemplatesPage() {
     setQuickReplies((prev) => prev.filter((item) => item !== value));
   };
 
+  if (!permLoading && !canView("templates")) return <AccessDenied />;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -354,6 +360,7 @@ export default function WhatsAppTemplatesPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {!canEdit("templates") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
         <div>
