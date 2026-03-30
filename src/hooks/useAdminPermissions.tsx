@@ -7,7 +7,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import type { PermissionLevel, PermissionsMap, SectionKey } from "@/store/endpoints/adminUsers";
+import type { PermissionLevel, PermissionsMap, SectionKey, DashboardWidget, DashboardWidgetsMap } from "@/store/endpoints/adminUsers";
 
 interface AdminUser {
   email: string;
@@ -15,6 +15,7 @@ interface AdminUser {
   name?: string;
   userId?: string;
   permissions: PermissionsMap | null; // null = super admin (full access)
+  dashboardWidgets?: DashboardWidgetsMap | null;
 }
 
 interface PermissionContextValue {
@@ -23,6 +24,7 @@ interface PermissionContextValue {
   isSuperAdmin: boolean;
   canView: (section: SectionKey) => boolean;
   canEdit: (section: SectionKey) => boolean;
+  canViewWidget: (widget: DashboardWidget) => boolean;
 }
 
 const AdminPermissionContext = createContext<PermissionContextValue>({
@@ -31,6 +33,7 @@ const AdminPermissionContext = createContext<PermissionContextValue>({
   isSuperAdmin: false,
   canView: () => true,
   canEdit: () => true,
+  canViewWidget: () => true,
 });
 
 export function AdminPermissionProvider({ children }: { children: ReactNode }) {
@@ -65,8 +68,15 @@ export function AdminPermissionProvider({ children }: { children: ReactNode }) {
     return level === "edit";
   };
 
+  const canViewWidget = (widget: DashboardWidget): boolean => {
+    if (!user) return false;
+    if (user.permissions === null) return true; // super admin sees everything
+    if (!user.dashboardWidgets) return true; // no config = show all
+    return user.dashboardWidgets[widget] !== false;
+  };
+
   return (
-    <AdminPermissionContext.Provider value={{ user, loading, isSuperAdmin, canView, canEdit }}>
+    <AdminPermissionContext.Provider value={{ user, loading, isSuperAdmin, canView, canEdit, canViewWidget }}>
       {children}
     </AdminPermissionContext.Provider>
   );

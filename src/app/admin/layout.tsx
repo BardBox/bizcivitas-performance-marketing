@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import AdminShell from "@/components/admin/AdminShell";
 import StoreProvider from "@/store/StoreProvider";
 import { AdminPermissionProvider } from "@/hooks/useAdminPermissions";
+import { ThemeProvider } from "@/components/admin/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "Admin - BizCivitas Performance Marketing",
@@ -16,7 +17,9 @@ export default function AdminLayout({
   return (
     <StoreProvider>
       <AdminPermissionProvider>
-        <AdminShell>{children}</AdminShell>
+        <ThemeProvider>
+          <AdminShell>{children}</AdminShell>
+        </ThemeProvider>
       </AdminPermissionProvider>
     </StoreProvider>
   );

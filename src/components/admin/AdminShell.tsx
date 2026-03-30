@@ -26,6 +26,7 @@ import {
   Shield,
   Bot,
   UserCog,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/api";
@@ -204,8 +205,20 @@ export default function AdminShell({
           )}
         </nav>
 
-        {/* Logout */}
-        <div className="px-3 py-4 border-t border-white/10">
+        {/* Settings + Logout */}
+        <div className="px-3 py-4 border-t border-white/10 space-y-1">
+          <a
+            href="/admin/settings"
+            onClick={() => setSidebarOpen(false)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              pathname === "/admin/settings"
+                ? "bg-[#f97316] text-white"
+                : "text-gray-300 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            Settings
+          </a>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors w-full cursor-pointer"
@@ -217,7 +230,7 @@ export default function AdminShell({
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 admin-main">
         {/* Mobile top bar */}
         <header className="md:hidden bg-[#1a1a2e] text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30">
           <button

@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
         role: "pm-subadmin",
         userId: user._id,
         permissions: user.permissions,
+        dashboardWidgets: user.dashboardWidgets ?? null,
       },
       JWT_SECRET,
       { expiresIn: "7d" }

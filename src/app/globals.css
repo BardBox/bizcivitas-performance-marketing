@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode for Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: #ffffff;
   --color-foreground: #1a1a2e;
@@ -20,6 +23,108 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans);
 }
+
+/* Admin main content area base */
+.admin-main {
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ════════════════════════════════════════════
+   DARK MODE — flip light-designed pages dark
+   ════════════════════════════════════════════ */
+html.dark .admin-main {
+  background-color: #030712;
+  color: #f9fafb;
+}
+
+html.dark .admin-main .bg-white          { background-color: #111827 !important; }
+html.dark .admin-main .bg-gray-50        { background-color: #1f2937 !important; }
+html.dark .admin-main .bg-gray-100       { background-color: #111827 !important; }
+html.dark .admin-main .bg-gray-200       { background-color: #1f2937 !important; }
+
+html.dark .admin-main .text-gray-900     { color: #f9fafb !important; }
+html.dark .admin-main .text-gray-800     { color: #e5e7eb !important; }
+html.dark .admin-main .text-gray-700     { color: #d1d5db !important; }
+html.dark .admin-main .text-gray-600     { color: #9ca3af !important; }
+
+html.dark .admin-main .border-gray-100   { border-color: #1f2937 !important; }
+html.dark .admin-main .border-gray-200   { border-color: #374151 !important; }
+html.dark .admin-main .border-gray-300   { border-color: #4b5563 !important; }
+
+html.dark .admin-main thead tr           { background-color: #111827 !important; }
+html.dark .admin-main th                 { color: #9ca3af !important; border-color: #374151 !important; }
+html.dark .admin-main td                 { border-color: #1f2937 !important; }
+
+html.dark .admin-main input:not([class*="bg-gray-"]):not([class*="bg-white"]):not([class*="bg-orange"]) {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+html.dark .admin-main textarea:not([class*="bg-gray-"]) {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+html.dark .admin-main select:not([class*="bg-gray-"]) {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+
+html.dark .admin-main ::placeholder      { color: #6b7280 !important; }
+html.dark .admin-main .shadow-sm         { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+html.dark .admin-main .shadow-md         { box-shadow: 0 4px 8px rgba(0,0,0,0.5) !important; }
+
+/* ════════════════════════════════════════════
+   LIGHT MODE — flip dark-designed pages light
+   ════════════════════════════════════════════ */
+html:not(.dark) .admin-main {
+  background-color: #f5f5f5;
+  color: #111827;
+}
+
+html:not(.dark) .admin-main .bg-gray-950  { background-color: #f9fafb !important; }
+html:not(.dark) .admin-main .bg-gray-900  { background-color: #ffffff !important; }
+html:not(.dark) .admin-main .bg-gray-800  { background-color: #f3f4f6 !important; }
+html:not(.dark) .admin-main .bg-gray-700  { background-color: #e5e7eb !important; }
+
+html:not(.dark) .admin-main .text-white   { color: #111827 !important; }
+html:not(.dark) .admin-main .text-gray-100 { color: #1f2937 !important; }
+html:not(.dark) .admin-main .text-gray-200 { color: #374151 !important; }
+html:not(.dark) .admin-main .text-gray-300 { color: #4b5563 !important; }
+html:not(.dark) .admin-main .text-gray-400 { color: #6b7280 !important; }
+html:not(.dark) .admin-main .text-gray-500 { color: #9ca3af !important; }
+html:not(.dark) .admin-main .text-gray-600 { color: #4b5563 !important; }
+html:not(.dark) .admin-main .text-gray-700 { color: #374151 !important; }
+
+html:not(.dark) .admin-main .border-gray-800 { border-color: #e5e7eb !important; }
+html:not(.dark) .admin-main .border-gray-700 { border-color: #d1d5db !important; }
+html:not(.dark) .admin-main .border-gray-600 { border-color: #9ca3af !important; }
+
+html:not(.dark) .admin-main .divide-gray-800 > * + * { border-color: #e5e7eb !important; }
+html:not(.dark) .admin-main .divide-gray-700 > * + * { border-color: #d1d5db !important; }
+
+html:not(.dark) .admin-main input.bg-gray-800,
+html:not(.dark) .admin-main input.bg-gray-700 {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+html:not(.dark) .admin-main textarea.bg-gray-800,
+html:not(.dark) .admin-main textarea.bg-gray-700 {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+html:not(.dark) .admin-main select.bg-gray-800,
+html:not(.dark) .admin-main select.bg-gray-700 {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+html:not(.dark) .admin-main ::placeholder { color: #9ca3af !important; }
 
 html {
   scroll-behavior: smooth;
