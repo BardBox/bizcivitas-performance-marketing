@@ -87,12 +87,20 @@ function PaymentSuccessContent() {
                 Thank you for joining BizCivitas. Our team will reach out to you
                 shortly with the next steps.
               </p>
-              <a
-                href="/"
-                className="inline-block mt-6 bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-2.5 rounded-lg transition-colors"
-              >
-                Back to Home
-              </a>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+                <a
+                  href="https://bizcivitas-userpanel.vercel.app/"
+                  className="inline-block bg-[#f97316] hover:bg-[#ea580c] text-white font-semibold px-6 py-2.5 rounded-lg transition-colors"
+                >
+                  Go to Member Panel →
+                </a>
+                <a
+                  href="/"
+                  className="inline-block border border-gray-200 text-gray-500 font-semibold px-6 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Back to Home
+                </a>
+              </div>
             </>
           )}
 

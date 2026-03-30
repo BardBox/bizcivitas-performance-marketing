@@ -134,7 +134,7 @@ function CheckoutContent() {
         email: orderData.email,
         contact: orderData.phone,
       },
-      theme: { color: "#1a1a2e" },
+      theme: { color: "#f97316" },
       handler: async (response: RazorpayResponse) => {
         try {
           const res = await fetch(`${API_BASE_URL}/pm/inquiry/verify-payment`, {
@@ -302,8 +302,8 @@ function CheckoutContent() {
                   onClick={handlePayment}
                   className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold py-3.5 rounded-xl text-[15px] transition-all cursor-pointer flex items-center justify-center gap-2.5 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 active:scale-[0.98]"
                 >
-                  PROCEED
-                  <span className="text-lg">&#x25B6;&#x25B6;</span>
+                  <Lock className="w-4 h-4" />
+                  Pay Securely
                 </button>
               </div>
 
@@ -380,10 +380,16 @@ function CheckoutContent() {
 
                   </div>
 
-                  {/* CTA */}
+                  {/* CTAs */}
+                  <a
+                    href="https://bizcivitas-userpanel.vercel.app/"
+                    className="block mt-5 w-full bg-[#f97316] hover:bg-[#ea580c] text-white font-bold py-3 rounded-xl text-center text-sm transition-colors"
+                  >
+                    Go to Member Panel →
+                  </a>
                   <a
                     href="/"
-                    className="block mt-5 w-full bg-[#f97316] hover:bg-[#ea580c] text-white font-bold py-3 rounded-xl text-center text-sm transition-colors"
+                    className="block mt-2 w-full border border-gray-200 text-gray-500 font-semibold py-2.5 rounded-xl text-center text-sm hover:bg-gray-50 transition-colors"
                   >
                     Back to Home
                   </a>
@@ -419,7 +425,8 @@ function CheckoutContent() {
                     href="/"
                     className="border border-gray-200 text-gray-500 font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors"
                   >
-Try again                  </a>
+                    Try again
+                  </a>
                 </div>
               </div>
             </div>

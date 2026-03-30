@@ -1,14 +1,26 @@
+"use client";
+
+import { useState } from "react";
+import InquiryModal from "./InquiryModal";
+
 export default function Navbar() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
-    <nav className="w-full py-4 px-6 md:px-12 flex items-center justify-between bg-white">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-          <span className="text-white font-bold text-sm">B</span>
-        </div>
-        <span className="text-navy font-bold text-xl tracking-tight">
-          BIZCIVITAS
-        </span>
-      </div>
-    </nav>
+    <>
+      <nav className="sticky top-0 z-40 w-full py-3 px-6 md:px-12 flex items-center justify-between bg-white shadow-sm">
+        <a href="/" className="flex items-center gap-2">
+          <img src="/images/logo.png" alt="BizCivitas" className="h-8 w-auto" />
+        </a>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-primary hover:bg-primary-dark text-white font-semibold py-2 px-5 rounded-md text-sm transition-colors cursor-pointer"
+        >
+          Join Now
+        </button>
+      </nav>
+
+      <InquiryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    </>
   );
 }
