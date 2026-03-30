@@ -1,9 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Loader2, CheckCircle } from "lucide-react";
 import { syncEventsToInquiry } from "@/hooks/useEngagementTracker";
 import { API_BASE_URL } from "@/lib/api";
+
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+];
 
 interface InquiryModalProps {
   isOpen: boolean;
@@ -29,11 +39,19 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
   const [error, setError] = useState("");
   const formStartedRef = useRef(false);
 
+  // Close on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Track form_started on first interaction
   const handleFormFocus = () => {
     if (formStartedRef.current) return;
     formStartedRef.current = true;
-    // Store event in sessionStorage
     try {
       const events = JSON.parse(sessionStorage.getItem("pm_events") || "[]");
       events.push({ event: "form_started", timestamp: new Date().toISOString() });
@@ -58,7 +76,6 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
     setError("");
 
     try {
-      // Capture UTM params from URL
       const params = new URLSearchParams(window.location.search);
 
       const res = await fetch(`${API_BASE_URL}/pm/inquiry/add`, {
@@ -83,7 +100,6 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
       }
       const inquiryId = data.data?._id;
 
-      // Track form_submitted and sync all events to this inquiry
       try {
         const events = JSON.parse(sessionStorage.getItem("pm_events") || "[]");
         events.push({ event: "form_submitted", timestamp: new Date().toISOString() });
@@ -95,7 +111,6 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
 
       setSubmitted(true);
 
-      // Save inquiry ID for return visits (email/WhatsApp redirects)
       if (inquiryId) {
         try {
           localStorage.setItem("pm_inquiry_id", inquiryId);
@@ -103,7 +118,6 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
         } catch { /* silent */ }
       }
 
-      // Redirect to Razorpay checkout page after short delay
       setTimeout(() => {
         setFormData({
           fullName: "",
@@ -131,14 +145,17 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-2xl relative shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-2xl w-full max-w-2xl relative shadow-2xl max-h-[95vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-navy to-navy/90 rounded-t-2xl px-8 py-4 text-center relative">
-          {/* Close button */}
+        <div className="bg-gradient-to-r from-navy to-navy/90 rounded-t-2xl px-8 py-4 text-center relative flex-shrink-0">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center cursor-pointer transition-colors"
+            aria-label="Close"
           >
             <X className="w-4 h-4" />
           </button>
@@ -151,8 +168,12 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
           </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} onFocus={handleFormFocus} className="px-8 py-4 space-y-2.5">
+        {/* Scrollable Form */}
+        <form
+          onSubmit={handleSubmit}
+          onFocus={handleFormFocus}
+          className="px-8 py-4 space-y-2.5 overflow-y-auto"
+        >
           {/* Row 1: Full Name & Company Name */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -162,7 +183,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
               <input
                 type="text"
                 name="fullName"
-                placeholder="Full Name"
+                placeholder="Your full name"
                 required
                 value={formData.fullName}
                 onChange={handleChange}
@@ -176,7 +197,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
               <input
                 type="text"
                 name="companyName"
-                placeholder="Company Name"
+                placeholder="Your company name"
                 required
                 value={formData.companyName}
                 onChange={handleChange}
@@ -194,7 +215,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
               <input
                 type="email"
                 name="email"
-                placeholder="Email"
+                placeholder="you@company.com"
                 required
                 value={formData.email}
                 onChange={handleChange}
@@ -208,12 +229,14 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
               <input
                 type="tel"
                 name="phone"
-                placeholder="Phone"
+                placeholder="10-digit mobile number"
                 required
+                maxLength={10}
                 value={formData.phone}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
               />
+              <p className="text-[10px] text-gray-400 mt-0.5">No +91 prefix needed</p>
             </div>
           </div>
 
@@ -226,7 +249,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
               <input
                 type="text"
                 name="city"
-                placeholder="City"
+                placeholder="Your city"
                 required
                 value={formData.city}
                 onChange={handleChange}
@@ -237,15 +260,18 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
               <label className="block text-xs font-semibold text-navy mb-0.5">
                 State <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 name="state"
-                placeholder="State"
                 required
                 value={formData.state}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
-              />
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 bg-white transition-colors"
+              >
+                <option value="">Select state</option>
+                {INDIAN_STATES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -283,10 +309,10 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 bg-white transition-colors"
               >
                 <option value="">Select</option>
-                <option value="1-5">1-5</option>
-                <option value="6-20">6-20</option>
-                <option value="21-50">21-50</option>
-                <option value="51-100">51-100</option>
+                <option value="1-5">1–5</option>
+                <option value="6-20">6–20</option>
+                <option value="21-50">21–50</option>
+                <option value="51-100">51–100</option>
                 <option value="100+">100+</option>
               </select>
             </div>
@@ -295,7 +321,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
           {/* Row 5: GST Number */}
           <div>
             <label className="block text-xs font-semibold text-navy mb-0.5">
-              GST Number
+              GST Number <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               type="text"
@@ -320,9 +346,9 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
               />
               <span className="text-[10px] text-gray-500 leading-snug">
                 By checking this box, I consent to receive non-marketing text
-                messages from <a href="https://bizcivitas.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium">BizCivitas</a>. Message frequency varies, message &
-                data rates may apply. Text HELP for assistance, reply STOP to
-                opt out.
+                messages from{" "}
+                <a href="https://bizcivitas.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium">BizCivitas</a>.
+                Message frequency varies, message & data rates may apply. Text HELP for assistance, reply STOP to opt out.
               </span>
             </label>
 
@@ -336,9 +362,9 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
               />
               <span className="text-[10px] text-gray-500 leading-snug">
                 By checking this box, I consent to receive marketing and
-                promotional messages including special offers, discounts, new
-                product updates among others from <a href="https://bizcivitas.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium">BizCivitas</a> at the phone number
-                provided. Frequency may vary. Message & data rates may apply.
+                promotional messages including special offers, discounts, and updates from{" "}
+                <a href="https://bizcivitas.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium">BizCivitas</a>{" "}
+                at the phone number provided. Frequency may vary. Message & data rates may apply.
                 Text HELP for assistance, reply STOP to opt out.
               </span>
             </label>
@@ -346,7 +372,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
 
           {/* Error */}
           {error && (
-            <p className="text-red-500 text-xs text-center">{error}</p>
+            <p className="text-red-500 text-xs text-center bg-red-50 py-2 px-3 rounded-md">{error}</p>
           )}
 
           {/* Submit */}
@@ -363,10 +389,10 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
             ) : submitted ? (
               <>
                 <CheckCircle className="w-4 h-4" />
-                Submitted!
+                Done! Redirecting to checkout...
               </>
             ) : (
-              "Submit"
+              "Start My Membership →"
             )}
           </button>
 

@@ -26,6 +26,9 @@ import {
   BarChart3,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 // ── Marketing Labels (synced with Contacts/Kanban) ──
 const MARKETING_LABELS: Record<string, { term: string; description: string }> = {
@@ -134,6 +137,7 @@ const BUILT_IN_DESCRIPTIONS: Record<string, string> = {
 // ── Component ──
 
 export default function EmailPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [mainTab, setMainTab] = useState<"automations" | "reports">("automations");
   const [activeGroup, setActiveGroup] = useState("welcome");
@@ -336,8 +340,11 @@ export default function EmailPage() {
 
   // ── Render ──
 
+  if (!permLoading && !canView("email")) return <AccessDenied />;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {!canEdit("email") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

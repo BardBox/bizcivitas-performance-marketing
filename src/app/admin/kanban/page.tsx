@@ -17,6 +17,9 @@ import {
 import { useGetScoringConfigQuery } from "@/store/endpoints/scoringConfig";
 import { useLazyGetEngagementQuery } from "@/store/endpoints/engagement";
 import type { Inquiry } from "@/store/endpoints/inquiries";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 // Digital marketing terminology mapped to pipeline stage keys
 const MARKETING_LABELS: Record<string, { term: string; description: string }> = {
@@ -55,6 +58,7 @@ function eventLabel(key: string): string {
 }
 
 export default function KanbanPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [viewInquiry, setViewInquiry] = useState<Inquiry | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState("");
@@ -193,6 +197,8 @@ export default function KanbanPage() {
     });
   };
 
+  if (!permLoading && !canView("contacts")) return <AccessDenied />;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -203,6 +209,7 @@ export default function KanbanPage() {
 
   return (
     <div className="p-6 md:p-8">
+      {!canEdit("contacts") && <ViewOnlyBanner />}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a2e]">Pipeline Board</h1>

@@ -30,6 +30,9 @@ import { useGetScoringConfigQuery } from "@/store/endpoints/scoringConfig";
 import { useLazyGetEngagementQuery } from "@/store/endpoints/engagement";
 import type { Inquiry } from "@/store/endpoints/inquiries";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 // Digital marketing terminology mapped to pipeline stage keys
 const MARKETING_LABELS: Record<string, { term: string; description: string }> = {
@@ -50,6 +53,7 @@ const getMarketingLabel = (stageKey: string) => {
 };
 
 export default function InquiriesPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [pipelineFilter, setPipelineFilter] = useState("");
@@ -278,9 +282,12 @@ export default function InquiriesPage() {
     if (pipelineCounts[key] !== undefined) pipelineCounts[key]++;
   });
 
+  if (!permLoading && !canView("inquiries")) return <AccessDenied />;
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold text-[#1a1a2e] mb-6">Inquiries</h1>
+      {!canEdit("inquiries") && <ViewOnlyBanner />}
 
       {/* Pipeline Stage Stats */}
       {stages.length > 0 && (
@@ -707,6 +714,20 @@ export default function InquiriesPage() {
                   {sendResult.message}
                 </div>
               )}
+
+              {/* View Conversation Button */}
+              <div className="pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    router.push(`/admin/inquiries/${viewInquiry._id}/conversation`);
+                    setViewInquiry(null);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  View Full Conversation
+                </button>
+              </div>
 
               {/* Send Email Accordion */}
               <div className="pt-3 border-t border-gray-100">

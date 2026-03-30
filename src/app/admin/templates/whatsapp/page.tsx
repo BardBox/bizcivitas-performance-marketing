@@ -17,6 +17,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Info,
+  Link2,
+  Phone,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import {
   useGetWhatsappTemplatesQuery,
@@ -28,6 +32,9 @@ import {
   useDeleteWhatsappTemplateMutation,
   type WhatsappTemplate,
 } from "@/store/endpoints/whatsappTemplates";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 const CATEGORY_COLORS: Record<string, string> = {
   welcome: "bg-green-100 text-green-700",
@@ -90,6 +97,7 @@ const getErrorMessage = (err: unknown, fallback: string) => {
 };
 
 export default function WhatsAppTemplatesPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [showEditor, setShowEditor] = useState(false);
   const [showCreateOnTft, setShowCreateOnTft] = useState(false);
@@ -123,6 +131,7 @@ export default function WhatsAppTemplatesPage() {
   });
   const [quickReplyInput, setQuickReplyInput] = useState("");
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
+  const [isDynamicUrl, setIsDynamicUrl] = useState(false);
 
   const {
     data: templates = [],
@@ -178,6 +187,7 @@ export default function WhatsAppTemplatesPage() {
     });
     setQuickReplyInput("");
     setQuickReplies([]);
+    setIsDynamicUrl(false);
   };
 
   const filteredTemplates = useMemo(() => {
@@ -296,6 +306,13 @@ export default function WhatsAppTemplatesPage() {
 
     setNotice(null);
     try {
+      // For dynamic URL, append {{1}} so TFT treats it as a dynamic suffix
+      const finalLink = tftForm.lnk.trim()
+        ? isDynamicUrl && !tftForm.lnk.trim().includes("{{1}}")
+          ? tftForm.lnk.trim() + "{{1}}"
+          : tftForm.lnk.trim()
+        : "";
+
       await createWhatsappTemplateOnTft({
         templatename: cleanName,
         temptype: tftForm.temptype || "standard",
@@ -305,7 +322,7 @@ export default function WhatsAppTemplatesPage() {
         footer: tftForm.footer.trim(),
         dvariables: tftForm.dvariables.trim(),
         lcap: tftForm.lcap.trim(),
-        lnk: tftForm.lnk.trim(),
+        lnk: finalLink,
         cbtncap: tftForm.cbtncap.trim(),
         callno: tftForm.callno.trim(),
         qreply: quickReplies,
@@ -344,6 +361,8 @@ export default function WhatsAppTemplatesPage() {
     setQuickReplies((prev) => prev.filter((item) => item !== value));
   };
 
+  if (!permLoading && !canView("templates")) return <AccessDenied />;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -354,6 +373,7 @@ export default function WhatsAppTemplatesPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {!canEdit("templates") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -863,37 +883,98 @@ export default function WhatsAppTemplatesPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-gray-100 rounded-xl p-4 space-y-3">
-                  <p className="text-xs font-medium text-gray-600">Link Button</p>
-                  <input
-                    value={tftForm.lcap}
-                    onChange={(e) => setTftForm({ ...tftForm, lcap: e.target.value })}
-                    placeholder="Button Caption"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
-                  />
-                  <input
-                    value={tftForm.lnk}
-                    onChange={(e) => setTftForm({ ...tftForm, lnk: e.target.value })}
-                    placeholder="https://your-link.com"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
-                  />
+              {/* Link Button */}
+              <div className="border border-[#25D366]/30 rounded-xl p-4 space-y-3 bg-green-50/30">
+                <div className="flex items-center gap-2">
+                  <Link2 className="w-3.5 h-3.5 text-[#25D366]" />
+                  <p className="text-xs font-semibold text-gray-700">URL Button (CTA)</p>
                 </div>
 
-                <div className="border border-gray-100 rounded-xl p-4 space-y-3">
-                  <p className="text-xs font-medium text-gray-600">Call Button</p>
-                  <input
-                    value={tftForm.cbtncap}
-                    onChange={(e) => setTftForm({ ...tftForm, cbtncap: e.target.value })}
-                    placeholder="Call Now"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
-                  />
-                  <input
-                    value={tftForm.callno}
-                    onChange={(e) => setTftForm({ ...tftForm, callno: e.target.value })}
-                    placeholder="919999999999"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                      Button Label
+                    </label>
+                    <input
+                      value={tftForm.lcap}
+                      onChange={(e) => setTftForm({ ...tftForm, lcap: e.target.value })}
+                      placeholder="e.g. Claim Your Access"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366] bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                      {isDynamicUrl ? "Base URL (dynamic suffix auto-appended)" : "URL"}
+                    </label>
+                    <input
+                      value={tftForm.lnk}
+                      onChange={(e) => setTftForm({ ...tftForm, lnk: e.target.value })}
+                      placeholder={isDynamicUrl
+                        ? "https://bizcivitas-performance-marketing.vercel.app/checkout"
+                        : "https://your-link.com"}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366] bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Dynamic URL toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsDynamicUrl((v) => !v)}
+                  className="flex items-center gap-2 cursor-pointer group w-fit"
+                >
+                  {isDynamicUrl
+                    ? <ToggleRight className="w-5 h-5 text-[#25D366]" />
+                    : <ToggleLeft className="w-5 h-5 text-gray-400" />
+                  }
+                  <span className={`text-xs font-medium ${isDynamicUrl ? "text-[#25D366]" : "text-gray-500"}`}>
+                    Dynamic URL (personalized checkout link per visitor)
+                  </span>
+                </button>
+
+                {isDynamicUrl && (
+                  <div className="bg-white border border-[#25D366]/30 rounded-lg p-3 space-y-1">
+                    <p className="text-[11px] font-semibold text-green-700">How dynamic URL works:</p>
+                    <p className="text-[11px] text-gray-500">
+                      The button URL will automatically include each visitor&apos;s checkout link. Example:
+                    </p>
+                    <code className="block text-[11px] bg-gray-50 rounded px-2 py-1 text-gray-600 break-all">
+                      {(tftForm.lnk || "https://...your-base-url...") + "{{1}}"}
+                      <span className="text-[#25D366]"> → </span>
+                      {(tftForm.lnk || "https://...your-base-url...") + "?inquiry_id=abc123"}
+                    </code>
+                    <p className="text-[11px] text-gray-400">
+                      The backend sends <code className="bg-gray-100 px-1 rounded">urlsuffix=?inquiry_id=...</code> automatically for each recipient.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Call Button */}
+              <div className="border border-gray-100 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5 text-gray-500" />
+                  <p className="text-xs font-semibold text-gray-700">Call Button (optional)</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Button Label</label>
+                    <input
+                      value={tftForm.cbtncap}
+                      onChange={(e) => setTftForm({ ...tftForm, cbtncap: e.target.value })}
+                      placeholder="e.g. Call Now"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Phone Number</label>
+                    <input
+                      value={tftForm.callno}
+                      onChange={(e) => setTftForm({ ...tftForm, callno: e.target.value })}
+                      placeholder="919999999999 (with country code)"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
+                    />
+                  </div>
                 </div>
               </div>
 

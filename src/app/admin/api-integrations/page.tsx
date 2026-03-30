@@ -25,6 +25,9 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 // ── Types ──
 
@@ -90,6 +93,7 @@ const COLOR_OPTIONS = [
 ];
 
 export default function ApiIntegrationsPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
 
   // Built-in integrations
@@ -237,6 +241,8 @@ export default function ApiIntegrationsPage() {
 
   const configuredCount = integrations.filter((i) => i.configured).length;
 
+  if (!permLoading && !canView("api")) return <AccessDenied />;
+
   if (loading && pluginsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -247,6 +253,7 @@ export default function ApiIntegrationsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto">
+      {!canEdit("api") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>

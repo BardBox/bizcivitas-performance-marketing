@@ -17,6 +17,9 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 interface ScoringEvent {
   _id: string;
@@ -60,6 +63,7 @@ interface ScoringConfig {
 }
 
 export default function ScoringPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [config, setConfig] = useState<ScoringConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -359,6 +363,8 @@ export default function ScoringPage() {
   const systemEvents = events.filter((e) => e.isSystem);
   const customEvents = events.filter((e) => !e.isSystem);
 
+  if (!permLoading && !canView("pipeline")) return <AccessDenied />;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -369,6 +375,7 @@ export default function ScoringPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto">
+      {!canEdit("pipeline") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

@@ -21,6 +21,9 @@ import {
   CreditCard,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 interface Inquiry {
   _id: string;
@@ -41,6 +44,7 @@ interface Inquiry {
 }
 
 export default function MembersPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [members, setMembers] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,8 +119,11 @@ export default function MembersPage() {
     };
   };
 
+  if (!permLoading && !canView("members")) return <AccessDenied />;
+
   return (
     <div className="p-6 md:p-8">
+      {!canEdit("members") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

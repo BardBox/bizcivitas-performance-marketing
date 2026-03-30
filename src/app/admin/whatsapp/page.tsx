@@ -25,6 +25,9 @@ import {
   Send,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 // ── Marketing Labels ──
 const MARKETING_LABELS: Record<string, { term: string; description: string }> = {
@@ -148,6 +151,7 @@ const BUILT_IN_DESCRIPTIONS: Record<string, string> = {
 // ── Component ──
 
 export default function WhatsAppPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const router = useRouter();
   const [mainTab, setMainTab] = useState<"automations" | "reports">("automations");
   const [activeGroup, setActiveGroup] = useState("welcome");
@@ -375,6 +379,8 @@ export default function WhatsAppPage() {
 
   // ── Render ──
 
+  if (!permLoading && !canView("whatsapp")) return <AccessDenied />;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       {/* Save toast */}
@@ -384,6 +390,7 @@ export default function WhatsAppPage() {
         </div>
       )}
 
+      {!canEdit("whatsapp") && <ViewOnlyBanner />}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
