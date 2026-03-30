@@ -25,6 +25,8 @@ export const api = createApi({
     "WhatsappAutomation",
     "WhatsappAutomationGroup",
     "WhatsappReport",
+    "AdminUser",
+    "Conversation",
   ],
   endpoints: () => ({}),
 });

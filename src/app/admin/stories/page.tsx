@@ -12,6 +12,9 @@ import {
   EyeOff,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { ViewOnlyBanner } from "@/components/admin/ViewOnlyBanner";
 
 interface Story {
   _id: string;
@@ -24,6 +27,7 @@ interface Story {
 }
 
 export default function StoriesPage() {
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -245,8 +249,11 @@ export default function StoriesPage() {
     }
   };
 
+  if (!permLoading && !canView("stories")) return <AccessDenied />;
+
   return (
     <div className="p-6 md:p-8">
+      {!canEdit("stories") && <ViewOnlyBanner />}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Member Stories</h1>
