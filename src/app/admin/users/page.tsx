@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Loader2, ShieldCheck, Eye, EyeOff, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ShieldCheck, LayoutDashboard, Eye, EyeOff, X } from "lucide-react";
 import {
   useGetAdminUsersQuery,
   useCreateAdminUserMutation,
   useUpdateAdminUserMutation,
   useDeleteAdminUserMutation,
+  DASHBOARD_WIDGETS,
+  DEFAULT_DASHBOARD_WIDGETS,
   type AdminUser,
   type PermissionLevel,
   type SectionKey,
   type PermissionsMap,
+  type DashboardWidgetsMap,
 } from "@/store/endpoints/adminUsers";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 
@@ -38,6 +41,7 @@ interface FormState {
   password: string;
   isActive: boolean;
   permissions: PermissionsMap;
+  dashboardWidgets: DashboardWidgetsMap;
 }
 
 const EMPTY_FORM: FormState = {
@@ -46,6 +50,7 @@ const EMPTY_FORM: FormState = {
   password: "",
   isActive: true,
   permissions: DEFAULT_PERMISSIONS(),
+  dashboardWidgets: DEFAULT_DASHBOARD_WIDGETS(),
 };
 
 const LEVEL_LABELS: { value: PermissionLevel; label: string }[] = [
@@ -93,6 +98,7 @@ export default function AdminUsersPage() {
       password: "",
       isActive: user.isActive,
       permissions: { ...DEFAULT_PERMISSIONS(), ...user.permissions },
+      dashboardWidgets: { ...DEFAULT_DASHBOARD_WIDGETS(), ...user.dashboardWidgets },
     });
     setError("");
     setShowPassword(false);
@@ -122,6 +128,7 @@ export default function AdminUsersPage() {
           name: form.name,
           isActive: form.isActive,
           permissions: form.permissions,
+          dashboardWidgets: form.dashboardWidgets,
         };
         if (form.password.trim()) payload.password = form.password;
         await updateUser(payload).unwrap();
@@ -132,6 +139,7 @@ export default function AdminUsersPage() {
           password: form.password,
           isActive: form.isActive,
           permissions: form.permissions,
+          dashboardWidgets: form.dashboardWidgets,
         }).unwrap();
       }
       setModalOpen(false);
@@ -325,6 +333,48 @@ export default function AdminUsersPage() {
                   <span className="text-sm font-medium text-gray-700">
                     {form.isActive ? "Active" : "Inactive"}
                   </span>
+                </div>
+              </div>
+
+              {/* Dashboard Widgets visibility */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <LayoutDashboard className="w-4 h-4 text-[#f97316]" />
+                  <h3 className="text-sm font-semibold text-[#1a1a2e]">Dashboard Widgets</h3>
+                  <span className="text-xs text-gray-400 font-normal">— choose what this user sees on the dashboard</span>
+                </div>
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+                    {DASHBOARD_WIDGETS.map((widget) => (
+                      <label
+                        key={widget.key}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((f) => ({
+                              ...f,
+                              dashboardWidgets: {
+                                ...f.dashboardWidgets,
+                                [widget.key]: !f.dashboardWidgets[widget.key],
+                              },
+                            }))
+                          }
+                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                            form.dashboardWidgets[widget.key] ? "bg-[#f97316]" : "bg-gray-200"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                              form.dashboardWidgets[widget.key] ? "translate-x-4.5" : "translate-x-0.5"
+                            }`}
+                          />
+                        </button>
+                        <span className="text-sm text-gray-700">{widget.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
 

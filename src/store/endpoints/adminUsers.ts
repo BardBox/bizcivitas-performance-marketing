@@ -15,6 +15,32 @@ export type SectionKey =
   | "templates"
   | "api";
 
+export type DashboardWidget =
+  | "kpi_row1"
+  | "kpi_row2"
+  | "pipeline_chart"
+  | "status_pie"
+  | "daily_chart"
+  | "monthly_chart"
+  | "traffic_sources"
+  | "recent_inquiries";
+
+export const DASHBOARD_WIDGETS: { key: DashboardWidget; label: string }[] = [
+  { key: "kpi_row1",          label: "KPI Cards (Total, New, Hot, Converted)" },
+  { key: "kpi_row2",          label: "KPI Cards (Contacted, Warm, Cold, Conv. Rate)" },
+  { key: "pipeline_chart",    label: "Pipeline Distribution Chart" },
+  { key: "status_pie",        label: "Status Breakdown Pie Chart" },
+  { key: "daily_chart",       label: "Last 7 Days Chart" },
+  { key: "monthly_chart",     label: "6-Month Trend Chart" },
+  { key: "traffic_sources",   label: "Traffic Sources" },
+  { key: "recent_inquiries",  label: "Recent Inquiries" },
+];
+
+export type DashboardWidgetsMap = Record<DashboardWidget, boolean>;
+
+export const DEFAULT_DASHBOARD_WIDGETS = (): DashboardWidgetsMap =>
+  Object.fromEntries(DASHBOARD_WIDGETS.map((w) => [w.key, true])) as DashboardWidgetsMap;
+
 export type PermissionsMap = Record<SectionKey, PermissionLevel>;
 
 export interface AdminUser {
@@ -23,6 +49,7 @@ export interface AdminUser {
   email: string;
   isActive: boolean;
   permissions: PermissionsMap;
+  dashboardWidgets?: DashboardWidgetsMap;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +60,7 @@ interface CreateAdminUserInput {
   password: string;
   isActive?: boolean;
   permissions: PermissionsMap;
+  dashboardWidgets?: DashboardWidgetsMap;
 }
 
 interface UpdateAdminUserInput {
@@ -41,6 +69,7 @@ interface UpdateAdminUserInput {
   password?: string;
   isActive?: boolean;
   permissions?: PermissionsMap;
+  dashboardWidgets?: DashboardWidgetsMap;
 }
 
 const adminUsersApi = api.injectEndpoints({
