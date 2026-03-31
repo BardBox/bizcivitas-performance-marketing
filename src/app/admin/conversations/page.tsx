@@ -28,6 +28,9 @@ import {
   ChevronRight,
   X,
   SlidersHorizontal,
+  Code,
+  Eye,
+  Type,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
@@ -59,6 +62,7 @@ interface Message {
   sender: "admin" | "system" | "user";
   channel: "email" | "whatsapp";
   status?: "sent" | "delivered" | "read" | "failed" | "pending";
+  metadata?: { isHtml?: boolean; [key: string]: unknown } | null;
 }
 
 type RightView = "chat" | "info";
@@ -128,6 +132,8 @@ function ChatPanel({ channel, messages, inquiryId, canSend, onSent }: ChatPanelP
   const [content, setContent] = useState("");
   const [subject, setSubject] = useState("");
   const [sending, setSending] = useState(false);
+  const [isHtmlMode, setIsHtmlMode] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -142,7 +148,7 @@ function ChatPanel({ channel, messages, inquiryId, canSend, onSent }: ChatPanelP
       const endpoint = channel === "email"
         ? `${API_BASE_URL}/pm/conversations/${inquiryId}/email`
         : `${API_BASE_URL}/pm/conversations/${inquiryId}/whatsapp`;
-      const payload = channel === "email" ? { content, subject } : { content };
+      const payload = channel === "email" ? { content, subject, isHtml: isHtmlMode } : { content };
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -229,7 +235,14 @@ function ChatPanel({ channel, messages, inquiryId, canSend, onSent }: ChatPanelP
                           ? "bg-green-900/50 border border-green-800/40 text-green-100 rounded-bl-sm"
                           : "bg-gray-800 border border-gray-700 text-gray-100 rounded-bl-sm"
                       }`}>
-                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                        {msg.metadata?.isHtml ? (
+                          <div
+                            className="prose prose-xs prose-invert max-w-none break-words [&_img]:max-w-full [&_img]:h-auto"
+                            dangerouslySetInnerHTML={{ __html: msg.content }}
+                          />
+                        ) : (
+                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                        )}
                       </div>
                       <div className={`flex items-center gap-1 px-1 ${isAdmin ? "flex-row-reverse" : "flex-row"}`}>
                         <span className="text-xs text-gray-700">{msgTime(msg.messageTimestamp)}</span>
@@ -249,22 +262,64 @@ function ChatPanel({ channel, messages, inquiryId, canSend, onSent }: ChatPanelP
       {canSend && (
         <div className="border-t border-gray-800 px-3 py-2.5 bg-gray-900 shrink-0">
           {channel === "email" && (
-            <input
-              type="text"
-              placeholder="Subject…"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full mb-2 px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-orange-500"
+            <>
+              <input
+                type="text"
+                placeholder="Subject…"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full mb-2 px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-orange-500"
+              />
+              {/* HTML / Text toggle */}
+              <div className="flex items-center gap-1 mb-2">
+                <button
+                  onClick={() => setIsHtmlMode(false)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${!isHtmlMode ? "bg-orange-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"}`}
+                >
+                  <Type className="w-3 h-3" /> Text
+                </button>
+                <button
+                  onClick={() => setIsHtmlMode(true)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${isHtmlMode ? "bg-orange-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"}`}
+                >
+                  <Code className="w-3 h-3" /> HTML
+                </button>
+                {isHtmlMode && (
+                  <button
+                    onClick={() => setShowPreview((p) => !p)}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-800 text-gray-400 hover:text-white transition-colors ml-auto"
+                  >
+                    <Eye className="w-3 h-3" /> {showPreview ? "Edit" : "Preview"}
+                  </button>
+                )}
+              </div>
+              {isHtmlMode && (
+                <p className="text-xs text-gray-500 mb-1">
+                  Placeholders: <span className="text-orange-400">{"{{name}}"}</span>{" "}
+                  <span className="text-orange-400">{"{{email}}"}</span>{" "}
+                  <span className="text-orange-400">{"{{company}}"}</span>{" "}
+                  <span className="text-orange-400">{"{{phone}}"}</span>{" "}
+                  <span className="text-orange-400">{"{{city}}"}</span>{" "}
+                  <span className="text-orange-400">{"{{state}}"}</span>
+                </p>
+              )}
+            </>
+          )}
+          {/* Preview panel */}
+          {isHtmlMode && showPreview && content.trim() && (
+            <div
+              className="mb-2 p-2 bg-white rounded text-xs text-gray-900 max-h-36 overflow-y-auto prose prose-xs max-w-none [&_img]:max-w-full [&_img]:h-auto"
+              dangerouslySetInnerHTML={{ __html: content }}
             />
           )}
           <div className="flex items-end gap-2">
             <textarea
-              placeholder={`Message via ${isWA ? "WhatsApp" : "email"}…`}
+              placeholder={isHtmlMode ? "Paste HTML here…" : `Message via ${isWA ? "WhatsApp" : "email"}…`}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send(); }}
-              rows={2}
-              className="flex-1 px-3 py-2 text-xs bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none"
+              rows={isHtmlMode ? 4 : 2}
+              className={`flex-1 px-3 py-2 text-xs bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none ${isHtmlMode ? "font-mono" : ""}`}
             />
             <button
               onClick={send}

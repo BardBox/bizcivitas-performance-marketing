@@ -56,21 +56,21 @@ export function AdminPermissionProvider({ children }: { children: ReactNode }) {
 
   const canView = (section: SectionKey): boolean => {
     if (!user) return false;
-    if (user.permissions === null) return true; // super admin
+    if (user.permissions == null) return true; // super admin (null or undefined)
     const level: PermissionLevel = (user.permissions as PermissionsMap)[section] ?? "none";
     return level === "edit" || level === "view";
   };
 
   const canEdit = (section: SectionKey): boolean => {
     if (!user) return false;
-    if (user.permissions === null) return true; // super admin
+    if (user.permissions == null) return true; // super admin (null or undefined)
     const level: PermissionLevel = (user.permissions as PermissionsMap)[section] ?? "none";
     return level === "edit";
   };
 
   const canViewWidget = (widget: DashboardWidget): boolean => {
     if (!user) return false;
-    if (user.permissions === null) return true; // super admin sees everything
+    if (user.permissions == null) return true; // super admin sees everything
     if (!user.dashboardWidgets) return true; // no config = show all
     return user.dashboardWidgets[widget] !== false;
   };
