@@ -88,7 +88,7 @@ export default function ConversationDetailPage() {
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inquiryId = params.id as string;
-  const { canEdit, loading: permLoading } = useAdminPermissions();
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
 
   const [inquiry, setInquiry] = useState<InquiryData | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -279,7 +279,7 @@ export default function ConversationDetailPage() {
   const emailCount = messages.filter((m) => m.channel === "email").length;
   const waCount = messages.filter((m) => m.channel === "whatsapp").length;
 
-  if (!permLoading && !canEdit("inquiries")) return <AccessDenied />;
+  if (!permLoading && !canView("inquiries")) return <AccessDenied />;
 
   if (loading) {
     return (
@@ -374,7 +374,7 @@ export default function ConversationDetailPage() {
         </div>
 
         {/* Send via */}
-        {canEdit("inquiries") && (
+        {(canEdit("inquiries") || canEdit("conversations")) && (
           <div className="px-4 py-3 border-b border-gray-800">
             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2.5">
               Send Via
@@ -605,7 +605,7 @@ export default function ConversationDetailPage() {
         </div>
 
         {/* Input Area */}
-        {canEdit("inquiries") ? (
+        {(canEdit("inquiries") || canEdit("conversations")) ? (
           <div className="bg-gray-900 border-t border-gray-800 px-5 py-3 shrink-0">
             {/* Channel indicator + HTML toggle */}
             <div className="flex items-center justify-between mb-2">

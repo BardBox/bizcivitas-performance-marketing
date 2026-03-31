@@ -493,7 +493,7 @@ export default function ConversationsPage() {
   const waMsgs = messages.filter((m) => m.channel === "whatsapp");
   const emailMsgs = messages.filter((m) => m.channel === "email");
 
-  if (!permLoading && !canView("inquiries")) return <AccessDenied />;
+  if (!permLoading && !canView("conversations")) return <AccessDenied />;
 
   return (
     <div className="flex h-screen bg-gray-950 overflow-hidden">
@@ -781,7 +781,7 @@ export default function ConversationsPage() {
                         channel="whatsapp"
                         messages={waMsgs}
                         inquiryId={selected._id}
-                        canSend={!!canEdit("inquiries")}
+                        canSend={!!canEdit("conversations")}
                         onSent={() => fetchMessages(selected._id, true)}
                       />
                     </div>
@@ -792,7 +792,7 @@ export default function ConversationsPage() {
                         channel="email"
                         messages={emailMsgs}
                         inquiryId={selected._id}
-                        canSend={!!canEdit("inquiries")}
+                        canSend={!!canEdit("conversations")}
                         onSent={() => fetchMessages(selected._id, true)}
                       />
                     </div>
