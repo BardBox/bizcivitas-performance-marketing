@@ -48,6 +48,9 @@ html.dark .admin-main .text-gray-800     { color: #e5e7eb !important; }
 html.dark .admin-main .text-gray-700     { color: #d1d5db !important; }
 html.dark .admin-main .text-gray-600     { color: #9ca3af !important; }
 
+/* Custom navy text — flip to near-white in dark mode */
+html.dark .admin-main [class*="text-[#1a1a2e]"] { color: #f1f5f9 !important; }
+
 html.dark .admin-main .border-gray-100   { border-color: #1f2937 !important; }
 html.dark .admin-main .border-gray-200   { border-color: #374151 !important; }
 html.dark .admin-main .border-gray-300   { border-color: #4b5563 !important; }
@@ -84,23 +87,67 @@ html:not(.dark) .admin-main {
   color: #111827;
 }
 
+/* Custom navy backgrounds — keep as visible dark (buttons readable via exception below) */
+html:not(.dark) .admin-main [class*="bg-[#1a1a2e]"] { background-color: #1e293b !important; }
+html:not(.dark) .admin-main [class*="bg-[#2a2a3e]"] { background-color: #334155 !important; }
+
 html:not(.dark) .admin-main .bg-gray-950  { background-color: #f9fafb !important; }
 html:not(.dark) .admin-main .bg-gray-900  { background-color: #ffffff !important; }
 html:not(.dark) .admin-main .bg-gray-800  { background-color: #f3f4f6 !important; }
 html:not(.dark) .admin-main .bg-gray-700  { background-color: #e5e7eb !important; }
 
+/* Opacity-variant dark backgrounds — not caught by plain class overrides */
+html:not(.dark) .admin-main [class*="bg-gray-950/"] { background-color: rgba(249,250,251,0.8) !important; }
+html:not(.dark) .admin-main [class*="bg-gray-900/"] { background-color: rgba(255,255,255,0.85) !important; }
+html:not(.dark) .admin-main [class*="bg-gray-800/"] { background-color: #e5e7eb !important; }
+html:not(.dark) .admin-main [class*="bg-gray-700/"] { background-color: #d1d5db !important; }
+
+/* Coloured tinted dark backgrounds (WA/email channel headers & bubbles) */
+html:not(.dark) .admin-main [class*="bg-green-900/"] { background-color: #dcfce7 !important; }
+html:not(.dark) .admin-main [class*="bg-blue-900/"]  { background-color: #dbeafe !important; }
+
 html:not(.dark) .admin-main .text-white   { color: #111827 !important; }
+
+/* Exception: intentionally dark/coloured elements — keep text white */
+html:not(.dark) .admin-main [class*="bg-[#1a1a2e]"].text-white,
+html:not(.dark) .admin-main [class*="bg-[#2a2a3e]"].text-white,
+html:not(.dark) .admin-main [class*="bg-[#f97316]"].text-white,
+html:not(.dark) .admin-main [class*="bg-[#ea580c]"].text-white,
+html:not(.dark) .admin-main .bg-orange-500.text-white,
+html:not(.dark) .admin-main .bg-orange-600.text-white,
+html:not(.dark) .admin-main .bg-blue-600.text-white,
+html:not(.dark) .admin-main .bg-blue-500.text-white,
+html:not(.dark) .admin-main .bg-green-600.text-white,
+html:not(.dark) .admin-main .bg-green-500.text-white,
+html:not(.dark) .admin-main .bg-red-500.text-white,
+html:not(.dark) .admin-main .bg-red-600.text-white { color: #ffffff !important; }
+
 html:not(.dark) .admin-main .text-gray-100 { color: #1f2937 !important; }
 html:not(.dark) .admin-main .text-gray-200 { color: #374151 !important; }
 html:not(.dark) .admin-main .text-gray-300 { color: #4b5563 !important; }
 html:not(.dark) .admin-main .text-gray-400 { color: #6b7280 !important; }
-html:not(.dark) .admin-main .text-gray-500 { color: #9ca3af !important; }
-html:not(.dark) .admin-main .text-gray-600 { color: #4b5563 !important; }
-html:not(.dark) .admin-main .text-gray-700 { color: #374151 !important; }
+html:not(.dark) .admin-main .text-gray-500 { color: #4b5563 !important; }
+html:not(.dark) .admin-main .text-gray-600 { color: #374151 !important; }
+html:not(.dark) .admin-main .text-gray-700 { color: #1f2937 !important; }
+
+/* Light-coloured text on tinted dark backgrounds — make readable in light mode */
+html:not(.dark) .admin-main .text-blue-300   { color: #1d4ed8 !important; }
+html:not(.dark) .admin-main .text-blue-100   { color: #1e3a8a !important; }
+html:not(.dark) .admin-main .text-green-300  { color: #15803d !important; }
+html:not(.dark) .admin-main .text-green-100  { color: #14532d !important; }
+html:not(.dark) .admin-main .text-orange-300 { color: #c2410c !important; }
+html:not(.dark) .admin-main .text-red-300    { color: #b91c1c !important; }
+html:not(.dark) .admin-main .text-yellow-300 { color: #a16207 !important; }
 
 html:not(.dark) .admin-main .border-gray-800 { border-color: #e5e7eb !important; }
 html:not(.dark) .admin-main .border-gray-700 { border-color: #d1d5db !important; }
 html:not(.dark) .admin-main .border-gray-600 { border-color: #9ca3af !important; }
+
+/* Opacity-variant borders */
+html:not(.dark) .admin-main [class*="border-gray-800/"] { border-color: #d1d5db !important; }
+html:not(.dark) .admin-main [class*="border-gray-700/"] { border-color: #e5e7eb !important; }
+html:not(.dark) .admin-main [class*="border-green-800/"] { border-color: #86efac !important; }
+html:not(.dark) .admin-main [class*="border-blue-800/"]  { border-color: #93c5fd !important; }
 
 html:not(.dark) .admin-main .divide-gray-800 > * + * { border-color: #e5e7eb !important; }
 html:not(.dark) .admin-main .divide-gray-700 > * + * { border-color: #d1d5db !important; }

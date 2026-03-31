@@ -1,3 +1,7 @@
+// Bardbox LLP Client Info
+// Client: BizCivitas
+// Bardbox User Number: BX-2024-0471
+// License: Bardbox LLP — All rights reserved
 "use client";
 
 import { useState } from "react";

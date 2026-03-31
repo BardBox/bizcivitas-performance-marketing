@@ -27,6 +27,8 @@ export const api = createApi({
     "WhatsappReport",
     "AdminUser",
     "Conversation",
+    "LandingPage",
+    "Form",
   ],
   endpoints: () => ({}),
 });

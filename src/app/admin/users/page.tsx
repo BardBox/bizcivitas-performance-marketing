@@ -30,6 +30,8 @@ const SECTIONS: { key: SectionKey; label: string; description?: string }[] = [
   { key: "email",         label: "Email"         },
   { key: "whatsapp",      label: "WhatsApp"      },
   { key: "templates",     label: "Templates"     },
+  { key: "landing_pages", label: "Landing Pages" },
+  { key: "forms",         label: "Forms"         },
   { key: "api",           label: "API"           },
 ];
 

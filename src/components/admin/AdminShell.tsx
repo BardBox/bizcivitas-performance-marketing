@@ -27,6 +27,8 @@ import {
   Bot,
   UserCog,
   Settings,
+  MonitorPlay,
+  ClipboardList,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/api";
@@ -57,8 +59,10 @@ const navItems: { label: string; href: string; icon: React.ElementType; section:
   { label: "Pipeline",       href: "/admin/scoring",          icon: Gauge,             section: "pipeline"   },
   { label: "Email",          href: "/admin/email",            icon: Mail,              section: "email"      },
   { label: "WhatsApp",       href: "/admin/whatsapp",         icon: MessageCircle,     section: "whatsapp"   },
-  { label: "Templates",      href: "/admin/templates",        icon: FileText,          section: "templates"  },
-  { label: "API",            href: "/admin/api-integrations", icon: Plug,              section: "api"        },
+  { label: "Templates",      href: "/admin/templates",        icon: FileText,          section: "templates"      },
+  { label: "Landing Pages",  href: "/admin/landing-pages",   icon: MonitorPlay,       section: "landing_pages"  },
+  { label: "Forms",          href: "/admin/forms",           icon: ClipboardList,     section: "forms"          },
+  { label: "API",            href: "/admin/api-integrations", icon: Plug,             section: "api"            },
 ];
 
 const superAdminNavItems: { label: string; href: string; icon: React.ElementType }[] = [
@@ -212,6 +216,7 @@ export default function AdminShell({
           )}
         </nav>
 
+        
         {/* Settings + Logout */}
         <div className="px-3 py-4 border-t border-white/10 space-y-1">
           <a
@@ -233,6 +238,13 @@ export default function AdminShell({
             <LogOut className="w-4 h-4" />
             Logout
           </button>
+          <div className="text-center pt-3 space-y-0.5">
+            <p className="text-[9px] text-gray-500">
+              Powered by <span className="font-semibold">Bardbox LLP</span>
+            </p>
+            <p className="text-[8px] text-gray-600">Growth. Engineered.</p>
+            <p className="text-[8px] text-gray-700">BX 2024-0471</p>
+          </div>
         </div>
       </aside>
 
