@@ -15,7 +15,14 @@ export default function GrapesBuilder({ initialHtml = "", initialCss = "", onCha
   useEffect(() => {
     if (!containerRef.current || editorRef.current) return;
 
-    let editor: { destroy: () => void; getHtml: () => string; getCss: (opts?: { avoidProtected?: boolean }) => string; on: (event: string, cb: () => void) => void; setComponents: (html: string) => void; setStyle: (css: string) => void };
+    let editor: {
+      destroy: () => void;
+      getHtml: () => string;
+      getCss: (opts?: { avoidProtected?: boolean }) => string | undefined;
+      on: (event: string, cb: () => void) => void;
+      setComponents: (html: string) => void;
+      setStyle: (css: string) => void;
+    };
 
     (async () => {
       const grapesjs = (await import("grapesjs")).default;
