@@ -28,8 +28,10 @@ const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "pipeline",   label: "Pipeline"   },
   { key: "email",      label: "Email"      },
   { key: "whatsapp",   label: "WhatsApp"   },
-  { key: "templates",  label: "Templates"  },
-  { key: "api",        label: "API"        },
+  { key: "templates",     label: "Templates"     },
+  { key: "landing_pages", label: "Landing Pages" },
+  { key: "forms",         label: "Forms"         },
+  { key: "api",           label: "API"           },
 ];
 
 const DEFAULT_PERMISSIONS = (): PermissionsMap =>

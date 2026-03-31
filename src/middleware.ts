@@ -1,34 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
+
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const hostname = req.headers.get("host") || "";
+  const url = req.nextUrl.clone();
 
-  // Only protect /admin routes (except /admin/login)
-  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
-    const token = req.cookies.get("pm_admin_token")?.value;
+  // Skip admin, API, and static assets
+  if (
+    url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/api") ||
+    url.pathname.startsWith("/_next") ||
+    url.pathname.startsWith("/lp") ||
+    url.pathname.startsWith("/popup") ||
+    url.pathname.includes(".")
+  ) {
+    return NextResponse.next();
+  }
 
-    if (!token) {
-      const loginUrl = new URL("/admin/login", req.url);
-      return NextResponse.redirect(loginUrl);
-    }
+  // No subdomain rewrite on localhost
+  const isLocalhost = hostname.includes("localhost") || hostname.includes("127.0.0.1");
+  if (isLocalhost) return NextResponse.next();
 
-    // Guard /admin/users — super admin only
-    // Decode JWT payload without crypto (edge-safe: just read the base64 claims)
-    if (pathname.startsWith("/admin/users")) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        if (payload.role !== "pm-admin") {
-          return NextResponse.redirect(new URL("/admin", req.url));
-        }
-      } catch {
-        return NextResponse.redirect(new URL("/admin/login", req.url));
-      }
-    }
+  // Production subdomain detection: "membership.bizcivitas.com" → subdomain = "membership"
+  const parts = hostname.split(".");
+  if (parts.length > 2 && parts[0] !== "www") {
+    const subdomain = parts[0];
+    url.pathname = `/lp/${subdomain}`;
+    url.searchParams.set("_subdomain", "1");
+    return NextResponse.rewrite(url);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

@@ -13,7 +13,9 @@ export type SectionKey =
   | "email"
   | "whatsapp"
   | "templates"
-  | "api";
+  | "api"
+  | "landing_pages"
+  | "forms";
 
 export type DashboardWidget =
   | "kpi_row1"

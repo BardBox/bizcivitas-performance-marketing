@@ -1,3 +1,8 @@
+// Bardbox LLP Client Info
+// Client: BizCivitas
+// Bardbox User Number: BX-2024-0471
+// License: Bardbox LLP — All rights reserved
+
 export default function Navbar() {
   return (
     <nav className="w-full py-4 px-6 md:px-12 flex items-center justify-between bg-white">
