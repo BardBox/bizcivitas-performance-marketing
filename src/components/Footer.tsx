@@ -33,15 +33,16 @@ export default function Footer() {
 
         {/* Copyright */}
         <p className="text-gray-400 text-sm text-center">
-          © BardBox DigiGrowth LLP 2026, All rights reserved.{" "}
+          ©{" "}
           <a
             href="https://www.thebardbox.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:text-white transition-colors"
           >
-            www.thebardbox.com
+            BardBox DigiGrowth LLP {new Date().getFullYear()}
           </a>
+          , All rights reserved.
         </p>
       </div>
     </footer>
