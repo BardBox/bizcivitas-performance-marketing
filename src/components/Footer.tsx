@@ -32,8 +32,16 @@ export default function Footer() {
         </div>
 
         {/* Copyright */}
-        <p className="text-gray-400 text-sm">
-          2026 Bizcivitas - All rights reserved
+        <p className="text-gray-400 text-sm text-center">
+          © BardBox DigiGrowth LLP 2026, All rights reserved.{" "}
+          <a
+            href="https://www.thebardbox.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-white transition-colors"
+          >
+            www.thebardbox.com
+          </a>
         </p>
       </div>
     </footer>
