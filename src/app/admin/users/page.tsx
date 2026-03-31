@@ -18,16 +18,17 @@ import {
 } from "@/store/endpoints/adminUsers";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 
-const SECTIONS: { key: SectionKey; label: string }[] = [
-  { key: "dashboard",  label: "Dashboard"  },
-  { key: "inquiries",  label: "Inquiries"  },
-  { key: "plans",      label: "Plans"      },
-  { key: "members",    label: "Members"    },
-  { key: "stories",    label: "Stories"    },
-  { key: "contacts",   label: "Contacts"   },
-  { key: "pipeline",   label: "Pipeline"   },
-  { key: "email",      label: "Email"      },
-  { key: "whatsapp",   label: "WhatsApp"   },
+const SECTIONS: { key: SectionKey; label: string; description?: string }[] = [
+  { key: "dashboard",     label: "Dashboard"     },
+  { key: "inquiries",     label: "Inquiries"     },
+  { key: "conversations", label: "Conversations", description: "Send emails & WhatsApp messages" },
+  { key: "plans",         label: "Plans"         },
+  { key: "members",       label: "Members"       },
+  { key: "stories",       label: "Stories"       },
+  { key: "contacts",      label: "Contacts"      },
+  { key: "pipeline",      label: "Pipeline"      },
+  { key: "email",         label: "Email"         },
+  { key: "whatsapp",      label: "WhatsApp"      },
   { key: "templates",     label: "Templates"     },
   { key: "landing_pages", label: "Landing Pages" },
   { key: "forms",         label: "Forms"         },
@@ -401,7 +402,12 @@ export default function AdminUsersPage() {
                     <tbody className="divide-y divide-gray-100">
                       {SECTIONS.map((section) => (
                         <tr key={section.key} className="hover:bg-gray-50">
-                          <td className="px-4 py-2.5 font-medium text-gray-700">{section.label}</td>
+                          <td className="px-4 py-2.5">
+                            <span className="font-medium text-gray-700">{section.label}</span>
+                            {section.description && (
+                              <span className="block text-xs text-gray-400">{section.description}</span>
+                            )}
+                          </td>
                           {LEVEL_LABELS.map((level) => (
                             <td key={level.value} className="text-center px-4 py-2.5">
                               <input

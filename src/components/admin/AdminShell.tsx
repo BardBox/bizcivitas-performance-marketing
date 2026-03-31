@@ -51,7 +51,7 @@ interface PluginNav {
 const navItems: { label: string; href: string; icon: React.ElementType; section: SectionKey }[] = [
   { label: "Dashboard",      href: "/admin",                  icon: LayoutDashboard,   section: "dashboard"  },
   { label: "Inquiries",      href: "/admin/inquiries",        icon: MessageSquareText, section: "inquiries"  },
-  { label: "Conversations",  href: "/admin/conversations",    icon: MessageSquare,     section: "inquiries"  },
+  { label: "Conversations",  href: "/admin/conversations",    icon: MessageSquare,     section: "conversations"  },
   { label: "Plans",          href: "/admin/plans",            icon: CreditCard,        section: "plans"      },
   { label: "Members",        href: "/admin/members",          icon: Users,             section: "members"    },
   { label: "Stories",        href: "/admin/stories",          icon: Star,              section: "stories"    },
@@ -78,7 +78,7 @@ export default function AdminShell({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pluginNavItems, setPluginNavItems] = useState<PluginNav[]>([]);
-  const { canView, isSuperAdmin } = useAdminPermissions();
+  const { canView, isSuperAdmin, loading: permLoading } = useAdminPermissions();
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/pm/api-plugins/nav`)
@@ -139,27 +139,34 @@ export default function AdminShell({
 
         {/* Nav Items */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {visibleNavItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-[#f97316] text-white"
-                    : "text-gray-300 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </a>
-            );
-          })}
+          {permLoading
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg animate-pulse">
+                  <div className="w-4 h-4 bg-white/20 rounded" />
+                  <div className="h-3 bg-white/20 rounded w-24" />
+                </div>
+              ))
+            : visibleNavItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-[#f97316] text-white"
+                        : "text-gray-300 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </a>
+                );
+              })}
 
           {/* Dynamic plugin nav items */}
-          {pluginNavItems.length > 0 && (
+          {!permLoading && pluginNavItems.length > 0 && (
             <>
               <div className="pt-3 pb-1 px-3">
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Plugins</p>
@@ -188,7 +195,7 @@ export default function AdminShell({
           )}
 
           {/* Super admin only: Users management */}
-          {isSuperAdmin && (
+          {!permLoading && isSuperAdmin && (
             <>
               <div className="pt-3 pb-1 px-3">
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Admin</p>

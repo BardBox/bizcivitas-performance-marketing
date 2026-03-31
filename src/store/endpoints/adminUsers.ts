@@ -5,6 +5,7 @@ export type PermissionLevel = "edit" | "view" | "none";
 export type SectionKey =
   | "dashboard"
   | "inquiries"
+  | "conversations"
   | "plans"
   | "members"
   | "stories"

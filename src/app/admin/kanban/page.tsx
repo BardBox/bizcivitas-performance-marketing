@@ -128,8 +128,9 @@ export default function KanbanPage() {
     setMovingInquiryId(inquiry._id);
     try {
       await updateInquiry({ id: inquiry._id, pipelineStage: newStageKey }).unwrap();
-    } catch (err) {
-      console.error("Failed to move inquiry:", err);
+    } catch (err: unknown) {
+      const e = err as { status?: number | string; data?: unknown; error?: string };
+      console.error("Failed to move inquiry:", e?.status, e?.data || e?.error || err);
     } finally {
       setMovingInquiryId(null);
     }

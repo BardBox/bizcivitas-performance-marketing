@@ -123,6 +123,18 @@ const inquiriesApi = api.injectEndpoints({
       }),
       invalidatesTags: ["InquiryList", "InquiryStats"],
     }),
+
+    resetInquiryScore: build.mutation<Inquiry, string>({
+      query: (id) => ({
+        url: `/inquiry/${id}/reset-score`,
+        method: "PATCH",
+      }),
+      transformResponse: (response: { data: Inquiry }) => response.data,
+      invalidatesTags: (_result, _error, id) => [
+        { type: "Inquiry", id },
+        "InquiryList",
+      ],
+    }),
   }),
 });
 
@@ -133,6 +145,7 @@ export const {
   useUpdateInquiryMutation,
   useDeleteInquiryMutation,
   useDeleteMultipleInquiriesMutation,
+  useResetInquiryScoreMutation,
 } = inquiriesApi;
 
 export type { Inquiry, InquiriesResponse, InquiryStats };

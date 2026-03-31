@@ -15,6 +15,9 @@ import {
   Phone,
   RefreshCw,
   Filter,
+  Code,
+  Eye,
+  Type,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
@@ -31,6 +34,7 @@ interface ConversationMessage {
   status?: "sent" | "delivered" | "read" | "failed" | "pending";
   senderName?: string;
   recipient?: string;
+  metadata?: { isHtml?: boolean; [key: string]: unknown } | null;
 }
 
 interface InquiryData {
@@ -84,7 +88,7 @@ export default function ConversationDetailPage() {
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inquiryId = params.id as string;
-  const { canEdit, loading: permLoading } = useAdminPermissions();
+  const { canView, canEdit, loading: permLoading } = useAdminPermissions();
 
   const [inquiry, setInquiry] = useState<InquiryData | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -95,6 +99,10 @@ export default function ConversationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSyncedCount, setLastSyncedCount] = useState<number | null>(null);
+  const [isHtmlMode, setIsHtmlMode] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const fetchMessages = useCallback(
     async (silent = false) => {
@@ -144,6 +152,9 @@ export default function ConversationDetailPage() {
         const msgs: ConversationMessage[] =
           convData.data?.messages || convData.messages || [];
         if (Array.isArray(msgs)) setMessages(msgs);
+
+        // Pull any incoming WhatsApp replies from TFT on first load
+        syncWhatsapp();
       } catch (err) {
         console.error("Init fetch failed:", err);
       } finally {
@@ -153,11 +164,46 @@ export default function ConversationDetailPage() {
     if (inquiryId) init();
   }, [inquiryId]);
 
-  // Poll every 5 s
+  // Sync incoming WhatsApp replies from TFT then refresh messages
+  const syncWhatsapp = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/pm/conversations/${inquiryId}/whatsapp/sync`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const errMsg = data?.message || `Sync failed (${res.status})`;
+        console.error("[Sync] error:", errMsg);
+        setSyncError(errMsg);
+        setTimeout(() => setSyncError(null), 8000);
+      } else {
+        setSyncError(null);
+        if (data?.synced > 0) {
+          setLastSyncedCount(data.synced);
+          setTimeout(() => setLastSyncedCount(null), 4000);
+        }
+      }
+      await fetchMessages(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Sync error";
+      console.error("WhatsApp sync failed:", msg);
+      setSyncError(msg);
+      setTimeout(() => setSyncError(null), 8000);
+    } finally {
+      setSyncing(false);
+    }
+  }, [inquiryId, fetchMessages]);
+
+  // Poll DB every 5s; sync TFT incoming every 15s
   useEffect(() => {
-    const interval = setInterval(() => fetchMessages(true), 5000);
-    return () => clearInterval(interval);
-  }, [fetchMessages]);
+    const msgInterval = setInterval(() => fetchMessages(true), 5000);
+    const syncInterval = setInterval(() => syncWhatsapp(), 15000);
+    return () => {
+      clearInterval(msgInterval);
+      clearInterval(syncInterval);
+    };
+  }, [fetchMessages, syncWhatsapp]);
 
   const handleSend = async () => {
     if (!messageContent.trim()) return;
@@ -172,7 +218,7 @@ export default function ConversationDetailPage() {
 
       const payload =
         selectedChannel === "email"
-          ? { content: messageContent, subject }
+          ? { content: messageContent, subject, isHtml: isHtmlMode }
           : { content: messageContent };
 
       const res = await fetch(endpoint, {
@@ -233,7 +279,7 @@ export default function ConversationDetailPage() {
   const emailCount = messages.filter((m) => m.channel === "email").length;
   const waCount = messages.filter((m) => m.channel === "whatsapp").length;
 
-  if (!permLoading && !canEdit("inquiries")) return <AccessDenied />;
+  if (!permLoading && !canView("inquiries")) return <AccessDenied />;
 
   if (loading) {
     return (
@@ -328,7 +374,7 @@ export default function ConversationDetailPage() {
         </div>
 
         {/* Send via */}
-        {canEdit("inquiries") && (
+        {(canEdit("inquiries") || canEdit("conversations")) && (
           <div className="px-4 py-3 border-b border-gray-800">
             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2.5">
               Send Via
@@ -363,10 +409,30 @@ export default function ConversationDetailPage() {
         )}
 
         {/* Sync */}
-        <div className="mt-auto px-4 py-3 border-t border-gray-800">
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin text-orange-400" : ""}`} />
-            {syncing ? "Syncing…" : "Live · every 5s"}
+        <div className="mt-auto px-4 py-3 border-t border-gray-800 space-y-2">
+          {syncError && (
+            <div className="flex items-start gap-1.5 text-xs text-red-400 bg-red-900/20 border border-red-800/40 rounded-lg px-2.5 py-2">
+              <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+              <span className="break-all">{syncError}</span>
+            </div>
+          )}
+          {lastSyncedCount !== null && (
+            <div className="text-xs text-green-400 bg-green-900/20 border border-green-800/40 rounded-lg px-2.5 py-2">
+              +{lastSyncedCount} new message{lastSyncedCount !== 1 ? "s" : ""} synced
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin text-orange-400" : ""}`} />
+              {syncing ? "Syncing WA…" : "Live · 5s / 15s"}
+            </div>
+            <button
+              onClick={() => syncWhatsapp()}
+              disabled={syncing}
+              className="text-xs text-gray-500 hover:text-green-400 transition-colors disabled:opacity-40"
+            >
+              Sync now
+            </button>
           </div>
         </div>
       </div>
@@ -506,7 +572,14 @@ export default function ConversationDetailPage() {
                                 : "bg-gray-800 border border-gray-700 text-gray-100 rounded-2xl rounded-bl-sm"
                             }`}
                           >
-                            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                            {msg.metadata?.isHtml ? (
+                              <div
+                                className="prose prose-sm prose-invert max-w-none break-words [&_img]:max-w-full [&_img]:h-auto"
+                                dangerouslySetInnerHTML={{ __html: msg.content }}
+                              />
+                            ) : (
+                              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                            )}
                           </div>
 
                           {/* Timestamp + status */}
@@ -532,20 +605,62 @@ export default function ConversationDetailPage() {
         </div>
 
         {/* Input Area */}
-        {canEdit("inquiries") ? (
+        {(canEdit("inquiries") || canEdit("conversations")) ? (
           <div className="bg-gray-900 border-t border-gray-800 px-5 py-3 shrink-0">
-            {/* Channel indicator */}
-            <div className="flex items-center gap-2 mb-2">
-              {selectedChannel === "email" ? (
-                <>
-                  <Mail className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="text-xs text-blue-400 font-medium">Sending via Email</span>
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="w-3.5 h-3.5 text-green-400" />
-                  <span className="text-xs text-green-400 font-medium">Sending via WhatsApp</span>
-                </>
+            {/* Channel indicator + HTML toggle */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                {selectedChannel === "email" ? (
+                  <>
+                    <Mail className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="text-xs text-blue-400 font-medium">Sending via Email</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="w-3.5 h-3.5 text-green-400" />
+                    <span className="text-xs text-green-400 font-medium">Sending via WhatsApp</span>
+                  </>
+                )}
+              </div>
+
+              {selectedChannel === "email" && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => { setIsHtmlMode(false); setShowPreview(false); }}
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      !isHtmlMode
+                        ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                        : "text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    <Type className="w-3 h-3" />
+                    Text
+                  </button>
+                  <button
+                    onClick={() => setIsHtmlMode(true)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      isHtmlMode
+                        ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                        : "text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    <Code className="w-3 h-3" />
+                    HTML
+                  </button>
+                  {isHtmlMode && (
+                    <button
+                      onClick={() => setShowPreview(!showPreview)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ml-1 ${
+                        showPreview
+                          ? "bg-orange-500/20 text-orange-300 border border-orange-500/40"
+                          : "text-gray-500 hover:text-gray-300"
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" />
+                      Preview
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -559,16 +674,39 @@ export default function ConversationDetailPage() {
               />
             )}
 
+            {/* HTML placeholder hint */}
+            {isHtmlMode && selectedChannel === "email" && (
+              <p className="text-xs text-purple-400/70 mb-1.5 ml-1">
+                Placeholders: {"{{name}}"} {"{{email}}"} {"{{company}}"} {"{{phone}}"} {"{{city}}"} {"{{state}}"}
+              </p>
+            )}
+
+            {/* Preview panel */}
+            {isHtmlMode && showPreview && messageContent.trim() && (
+              <div className="mb-2 border border-gray-700 rounded-xl bg-white p-4 max-h-48 overflow-auto">
+                <div
+                  className="prose prose-sm max-w-none text-gray-900 [&_img]:max-w-full [&_img]:h-auto"
+                  dangerouslySetInnerHTML={{ __html: messageContent }}
+                />
+              </div>
+            )}
+
             <div className="flex items-end gap-2">
               <textarea
-                placeholder={`Type a ${selectedChannel} message…`}
+                placeholder={
+                  isHtmlMode && selectedChannel === "email"
+                    ? "Paste or type HTML…"
+                    : `Type a ${selectedChannel} message…`
+                }
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSend();
                 }}
-                rows={2}
-                className="flex-1 px-4 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none"
+                rows={isHtmlMode ? 6 : 2}
+                className={`flex-1 px-4 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none ${
+                  isHtmlMode ? "font-mono text-xs leading-relaxed" : ""
+                }`}
               />
               <button
                 onClick={handleSend}

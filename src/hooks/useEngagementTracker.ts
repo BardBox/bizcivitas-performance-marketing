@@ -95,11 +95,19 @@ export const syncEventsToInquiry = async (inquiryId: string): Promise<void> => {
   if (events.length === 0) return;
 
   try {
-    await fetch(`${API_BASE_URL}/pm/engagement/sync`, {
+    const res = await fetch(`${API_BASE_URL}/pm/engagement/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ inquiryId, events }),
     });
+
+    if (!res.ok) {
+      const errorData = await res.text();
+      console.warn("Engagement sync returned non-OK status", res.status, errorData);
+      return;
+    }
+
     // Clear stored events after successful sync
     sessionStorage.removeItem("pm_events");
     sessionStorage.removeItem("pm_pages");
@@ -112,13 +120,18 @@ export const syncEventsToInquiry = async (inquiryId: string): Promise<void> => {
 const sendEvent = async (event: string, email?: string) => {
   const sessionId = getSessionId();
   try {
-    await fetch(`${API_BASE_URL}/pm/engagement/track`, {
+    const res = await fetch(`${API_BASE_URL}/pm/engagement/track`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ sessionId, event, email }),
     });
-  } catch {
-    // Silent fail — don't block user experience
+
+    if (!res.ok && res.status === 401) {
+      console.warn("Engagement track unauthorized (401). Check backend access policy or API URL.");
+    }
+  } catch (err) {
+    console.error("Engagement track request failed:", err);
   }
 };
 
