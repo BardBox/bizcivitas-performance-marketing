@@ -37,7 +37,8 @@ const fallbackStories: Story[] = [
 ];
 
 export default function SuccessStories() {
-  const [stories, setStories] = useState<Story[]>(fallbackStories);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -49,9 +50,13 @@ export default function SuccessStories() {
         const data = await res.json();
         if (data.data && data.data.length > 0) {
           setStories(data.data);
+        } else {
+          setStories(fallbackStories);
         }
       } catch {
-        // Keep fallback stories
+        setStories(fallbackStories);
+      } finally {
+        setLoading(false);
       }
     };
     fetchStories();
@@ -106,6 +111,26 @@ export default function SuccessStories() {
     }, 3000);
     return () => clearInterval(interval);
   }, [isPaused, stories]);
+
+  if (loading) {
+    return (
+      <section className="py-16 px-6 md:px-12 lg:px-24 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-12" />
+          <div className="flex gap-8 overflow-hidden">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex-shrink-0 w-[280px] md:w-[300px] bg-gray-100 rounded-xl p-6 animate-pulse">
+                <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gray-200" />
+                <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-full mb-1" />
+                <div className="h-3 bg-gray-200 rounded w-5/6 mx-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 px-6 md:px-12 lg:px-24 bg-white">
