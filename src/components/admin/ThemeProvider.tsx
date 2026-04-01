@@ -13,8 +13,8 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: "dark",
-  resolvedTheme: "dark",
+  theme: "light",
+  resolvedTheme: "light",
   setTheme: () => {},
 });
 
@@ -23,13 +23,13 @@ export function useTheme() {
 }
 
 function getStoredTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return "light";
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    return (parsed.theme as Theme) || "dark";
+    return (parsed.theme as Theme) || "light";
   } catch {
-    return "dark";
+    return "light";
   }
 }
 
@@ -48,8 +48,8 @@ function applyTheme(resolved: "dark" | "light") {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
+  const [theme, setThemeState] = useState<Theme>("light");
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
 
   const resolve = useCallback((t: Theme): "dark" | "light" => {
     return t === "system" ? getSystemTheme() : t;
@@ -84,7 +84,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (e.key !== STORAGE_KEY) return;
       try {
         const parsed = e.newValue ? JSON.parse(e.newValue) : {};
-        const newTheme: Theme = parsed.theme || "dark";
+        const newTheme: Theme = parsed.theme || "light";
         const resolved = resolve(newTheme);
         setThemeState(newTheme);
         setResolvedTheme(resolved);
