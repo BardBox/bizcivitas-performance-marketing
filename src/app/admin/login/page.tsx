@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { refetch } = useAdminPermissions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +32,7 @@ export default function AdminLoginPage() {
         throw new Error(data.message || "Login failed");
       }
 
+      await refetch();
       router.push("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

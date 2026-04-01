@@ -25,6 +25,7 @@ interface PermissionContextValue {
   canView: (section: SectionKey) => boolean;
   canEdit: (section: SectionKey) => boolean;
   canViewWidget: (widget: DashboardWidget) => boolean;
+  refetch: () => Promise<void>;
 }
 
 const AdminPermissionContext = createContext<PermissionContextValue>({
@@ -34,22 +35,32 @@ const AdminPermissionContext = createContext<PermissionContextValue>({
   canView: () => true,
   canEdit: () => true,
   canViewWidget: () => true,
+  refetch: async () => {},
 });
 
 export function AdminPermissionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUser = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/verify");
+      const data = res.ok ? await res.json() : null;
+      if (data?.authenticated && data?.user) {
+        setUser(data.user as AdminUser);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/admin/verify")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.authenticated && data?.user) {
-          setUser(data.user as AdminUser);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    fetchUser();
   }, []);
 
   const isSuperAdmin = user?.role === "pm-admin";
@@ -76,7 +87,7 @@ export function AdminPermissionProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AdminPermissionContext.Provider value={{ user, loading, isSuperAdmin, canView, canEdit, canViewWidget }}>
+    <AdminPermissionContext.Provider value={{ user, loading, isSuperAdmin, canView, canEdit, canViewWidget, refetch: fetchUser }}>
       {children}
     </AdminPermissionContext.Provider>
   );
