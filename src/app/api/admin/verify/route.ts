@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "pm-admin-secret-key";
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8090";
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090";
 
 export async function GET(req: NextRequest) {
   try {
