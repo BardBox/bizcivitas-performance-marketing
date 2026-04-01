@@ -36,6 +36,7 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [alreadyMember, setAlreadyMember] = useState(false);
   const [error, setError] = useState("");
   const formStartedRef = useRef(false);
 
@@ -92,6 +93,11 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
 
       const data = await res.json();
       if (!res.ok) {
+        // Handle existing BizCivitas member trying to sign up via PM
+        if (res.status === 409 && data?.data?.alreadyMember) {
+          setAlreadyMember(true);
+          return;
+        }
         const serverMessage = data?.message || data?.error || "Something went wrong";
         if (res.status === 401) {
           throw new Error("Unauthorized: check API endpoint or credentials. " + serverMessage);
@@ -370,31 +376,49 @@ export default function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
             </label>
           </div>
 
+          {/* Already a member */}
+          {alreadyMember && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center space-y-2">
+              <CheckCircle className="w-8 h-8 text-blue-500 mx-auto" />
+              <p className="text-sm font-semibold text-blue-800">You&apos;re already a BizCivitas member!</p>
+              <p className="text-xs text-blue-600">Please log in to your account using the BizCivitas mobile app.</p>
+              <button
+                type="button"
+                onClick={onClose}
+                className="mt-1 text-xs text-blue-700 underline cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          )}
+
           {/* Error */}
           {error && (
             <p className="text-red-500 text-xs text-center bg-red-50 py-2 px-3 rounded-md">{error}</p>
           )}
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={submitting || submitted}
-            className="w-full bg-green hover:bg-green/90 text-white font-bold py-2.5 rounded-full text-base transition-all cursor-pointer hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Submitting...
-              </>
-            ) : submitted ? (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                Done! Redirecting to checkout...
-              </>
-            ) : (
-              "Start My Membership →"
-            )}
-          </button>
+          {!alreadyMember && (
+            <button
+              type="submit"
+              disabled={submitting || submitted}
+              className="w-full bg-green hover:bg-green/90 text-white font-bold py-2.5 rounded-full text-base transition-all cursor-pointer hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : submitted ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Done! Redirecting to checkout...
+                </>
+              ) : (
+                "Start My Membership →"
+              )}
+            </button>
+          )}
 
           {/* Links */}
           <div className="text-center text-[10px] text-gray-400 pb-1">
