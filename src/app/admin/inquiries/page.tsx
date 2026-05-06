@@ -17,6 +17,7 @@ import {
   MessageCircle,
   ChevronDown,
   Send,
+  UserPlus,
 } from "lucide-react";
 import {
   useGetInquiriesQuery,
@@ -25,6 +26,7 @@ import {
   useDeleteInquiryMutation,
   useDeleteMultipleInquiriesMutation,
   useResetInquiryScoreMutation,
+  useCreateInquiryMutation,
 } from "@/store/endpoints/inquiries";
 import { useGetScoringConfigQuery } from "@/store/endpoints/scoringConfig";
 import { useLazyGetEngagementQuery } from "@/store/endpoints/engagement";
@@ -73,6 +75,15 @@ export default function InquiriesPage() {
   const [sendingWa, setSendingWa] = useState(false);
   const [sendResult, setSendResult] = useState<{ type: string; success: boolean; message: string } | null>(null);
   const [resetConfirmText, setResetConfirmText] = useState("");
+
+  // Add manual lead
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const [addLeadForm, setAddLeadForm] = useState({
+    fullName: "", companyName: "", email: "", phone: "",
+    city: "", state: "", role: "", teamSize: "", notes: "",
+  });
+  const [addLeadError, setAddLeadError] = useState("");
+  const [createInquiry, { isLoading: creatingLead }] = useCreateInquiryMutation();
 
   // RTK Query hooks — auto-fetch on mount
   const { data: scoringConfig } = useGetScoringConfigQuery();
@@ -226,6 +237,21 @@ export default function InquiriesPage() {
   const handleViewInquiry = (inquiry: Inquiry) => {
     setViewInquiry(inquiry);
     triggerEngagement(inquiry._id);
+  };
+
+  const handleAddLead = async () => {
+    setAddLeadError("");
+    if (!addLeadForm.fullName || !addLeadForm.companyName || !addLeadForm.email || !addLeadForm.phone) {
+      setAddLeadError("Full name, company, email and phone are required.");
+      return;
+    }
+    try {
+      await createInquiry(addLeadForm).unwrap();
+      setAddLeadOpen(false);
+      setAddLeadForm({ fullName: "", companyName: "", email: "", phone: "", city: "", state: "", role: "", teamSize: "", notes: "" });
+    } catch {
+      setAddLeadError("Failed to add lead. Please try again.");
+    }
   };
 
   const handleResetScore = async () => {
@@ -384,6 +410,15 @@ export default function InquiriesPage() {
               <RefreshCw className="w-3.5 h-3.5" />
               Refresh
             </button>
+            {canEdit("inquiries") && (
+              <button
+                onClick={() => { setAddLeadOpen(true); setAddLeadError(""); }}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#f97316] hover:bg-[#ea580c] text-white text-sm rounded-lg cursor-pointer font-medium"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                Add Lead
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -556,6 +591,144 @@ export default function InquiriesPage() {
           </div>
         )}
       </div>
+
+      {/* Add Lead Modal */}
+      {addLeadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="bg-[#1a1a2e] rounded-t-2xl px-6 py-4 flex items-center justify-between">
+              <h3 className="text-white font-semibold">Add Manual Lead</h3>
+              <button onClick={() => setAddLeadOpen(false)} className="text-gray-400 hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    value={addLeadForm.fullName}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, fullName: e.target.value })}
+                    placeholder="John Doe"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f97316]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Company *</label>
+                  <input
+                    type="text"
+                    value={addLeadForm.companyName}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, companyName: e.target.value })}
+                    placeholder="Acme Pvt Ltd"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f97316]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    value={addLeadForm.email}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, email: e.target.value })}
+                    placeholder="john@acme.com"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f97316]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Phone *</label>
+                  <input
+                    type="text"
+                    value={addLeadForm.phone}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, phone: e.target.value })}
+                    placeholder="9876543210"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f97316]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">City</label>
+                  <input
+                    type="text"
+                    value={addLeadForm.city}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, city: e.target.value })}
+                    placeholder="Ahmedabad"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f97316]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">State</label>
+                  <input
+                    type="text"
+                    value={addLeadForm.state}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, state: e.target.value })}
+                    placeholder="Gujarat"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f97316]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Role</label>
+                  <select
+                    value={addLeadForm.role}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, role: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#f97316]"
+                  >
+                    <option value="">Select role</option>
+                    <option value="founder">Founder</option>
+                    <option value="co-founder">Co-Founder</option>
+                    <option value="ceo">CEO</option>
+                    <option value="director">Director</option>
+                    <option value="manager">Manager</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Team Size</label>
+                  <select
+                    value={addLeadForm.teamSize}
+                    onChange={(e) => setAddLeadForm({ ...addLeadForm, teamSize: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#f97316]"
+                  >
+                    <option value="">Select size</option>
+                    <option value="1-5">1-5</option>
+                    <option value="6-20">6-20</option>
+                    <option value="21-50">21-50</option>
+                    <option value="51-100">51-100</option>
+                    <option value="100+">100+</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Notes</label>
+                <textarea
+                  value={addLeadForm.notes}
+                  onChange={(e) => setAddLeadForm({ ...addLeadForm, notes: e.target.value })}
+                  placeholder="How did you meet this lead?"
+                  rows={3}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f97316] resize-none"
+                />
+              </div>
+              {addLeadError && (
+                <p className="text-xs text-red-500 font-medium">{addLeadError}</p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setAddLeadOpen(false)}
+                  className="px-4 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddLead}
+                  disabled={creatingLead}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#f97316] hover:bg-[#ea580c] text-white text-sm font-medium rounded-lg cursor-pointer disabled:opacity-60"
+                >
+                  {creatingLead ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                  {creatingLead ? "Adding..." : "Add Lead"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       {viewInquiry && (

@@ -1,36 +1,697 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BardBox Hub — Multi-Tenant White-Label Platform
 
-## Getting Started
+## Overview
 
-First, run the development server:
+This is the core product built by **BardBox**. It is a white-label SaaS platform that provisions client panels without any coding and without creating any new deployments. One frontend, one backend, one database cluster — serves every role, every department, and every client.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Deployment Reality
+
+```
+Repos        : 2 only (bardbox-hub + bardbox-hub-backend)
+Deployments  : 2 only (one frontend server + one backend server)
+DNS          : 1 record  bardbox.com → same server
+Work per new client : ZERO — fully automated via internal API
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+No new repo. No new deployment. No DNS entries. Client exists the moment Setup Wizard hits Launch.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## URL Structure
 
-## Learn More
+```
+bardbox.com/ceo                                    ← BardBox CEO panel
 
-To learn more about Next.js, take a look at the following resources:
+bardbox.com/performancemarketing                   ← PM Department dashboard
+bardbox.com/performancemarketing/bizcivitas        ← BizCivitas client panel (under PM)
+bardbox.com/performancemarketing/clientb           ← Client B panel (under PM)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+bardbox.com/dataanalysis                           ← Data Analysis Department dashboard
+bardbox.com/dataanalysis/client1                   ← Client 1 panel (under Data Analysis)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+bardbox.com/socialmedia                            ← Social Media Department dashboard
+bardbox.com/socialmedia/client2                    ← Client 2 panel (under Social Media)
+```
 
-## Deploy on Vercel
+No subdomains. No wildcard DNS. Everything runs under `bardbox.com` via path-based routing.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Architecture
+
+```
+BardBox (CEO)
+    └── Logs in at bardbox.com/ceo
+    └── Creates departments and assigns what features each can offer.
+    └── Analyzes each department's performance (clients, revenue, growth).
+    └── Cannot see or touch individual client data.
+
+Departments (Performance Marketing / Social Media / Data Analyst)
+    └── Each department logs in at their own path (bardbox.com/performancemarketing)
+    └── Runs Setup Wizard to onboard new clients.
+    └── Manages only their own clients.
+    └── Their clients live at bardbox.com/performancemarketing/{clientSlug}
+
+Clients
+    └── Log into their panel at bardbox.com/{departmentSlug}/{clientSlug}
+    └── See ONLY their assigned features — nothing else.
+    └── Get a unique tracking script to embed on their landing page.
+    └── Have no visibility into BardBox, other departments, or other clients.
+```
+
+---
+
+## Role Hierarchy
+
+| Role | URL | Access |
+|---|---|---|
+| **BardBox CEO** | `bardbox.com/ceo` | Department-level control + analytics |
+| **Department** | `bardbox.com/{deptSlug}` | Their clients only — Setup Wizard, billing |
+| **Client** | `bardbox.com/{deptSlug}/{clientSlug}` | Their panel only — assigned features |
+
+---
+
+## How Path-Based Routing Works
+
+Every request hits the same Next.js server. The middleware reads the URL path to determine who is accessing the panel.
+
+```
+DNS (one-time setup, never touch again):
+    bardbox.com  →  server IP
+
+Requests:
+    bardbox.com/performancemarketing/bizcivitas/admin
+        → middleware reads path → dept = "performancemarketing", client = "bizcivitas"
+        → fetches client config from backend
+        → injects into request context
+
+    bardbox.com/dataanalysis/client1/admin
+        → middleware reads path → dept = "dataanalysis", client = "client1"
+        → fetches client config from backend
+        → injects into request context
+```
+
+### Next.js Middleware (automatic, runs on every request)
+
+```
+Request hits bardbox.com/performancemarketing/bizcivitas/admin/members
+        │
+        └── middleware.ts
+                │
+                ├── Parse path → deptSlug = "performancemarketing", clientSlug = "bizcivitas"
+                ├── GET /api/internal/client-config?dept=performancemarketing&client=bizcivitas
+                │       └── pm-backend reads master_db.clients
+                │               └── returns { branding, features, db, integrations }
+                │
+                └── Injects config into request context
+                        └── /admin layout reads config
+                                ├── Applies branding (logo, colors, app name)
+                                └── Shows only features[] assigned to this client
+```
+
+No code change. No redeployment. New client = new record in DB = panel works immediately.
+
+---
+
+## System Flow
+
+```
+1. CEO logs in at bardbox.com/ceo
+        │
+        └── Creates department (e.g. Performance Marketing → slug: performancemarketing)
+                └── Assigns feature list that department is allowed to offer clients
+                        └── PM gets: [email, whatsapp, members, forms,
+                                       scoring, kanban, templates, plans,
+                                       conversations, inquiries, tracking]
+        │
+        └── Analyzes each department:
+                ├── Active client count
+                ├── Revenue generated by that dept
+                ├── Growth MoM
+                └── Client status breakdown (active / suspended / expired)
+
+2. Department logs in at bardbox.com/performancemarketing
+        │
+        └── Runs Setup Wizard for new client
+                Step 1 → Client Info        (name, slug, contact email)
+                Step 2 → Branding           (logo, primary color, app name, favicon)
+                Step 3 → Feature Select     (only from what CEO allowed for this dept)
+                Step 4 → Billing            (tier, price, expiry date)
+                Step 5 → Review & Launch
+                        │
+                        └── Internal API chain runs automatically:
+                                ├── POST /internal/provision    → stores client in master_db
+                                ├── POST /internal/create-db    → creates {clientSlug}_db in Atlas
+                                ├── POST /internal/issue-jwt    → signs RS256 license key
+                                ├── POST /internal/gen-tracking → generates unique tracking key
+                                └── POST /internal/send-email   → emails credentials to client
+
+3. Client receives email
+        │
+        └── Panel URL      → bardbox.com/performancemarketing/bizcivitas
+            Email          → admin@bizcivitas.in
+            Password       → [temp, must change on first login]
+            Tracking Code  → unique <script> tag for their landing page
+
+4. Client logs in at bardbox.com/performancemarketing/bizcivitas
+        └── Middleware reads path → dept = "performancemarketing", client = "bizcivitas"
+            Fetches config from DB → branding, features, db connection
+            Sees ONLY their white-labelled panel
+            with ONLY their assigned features
+            No visibility into BardBox, other clients, or other departments
+```
+
+---
+
+## Client Provisioning — Internal API Chain
+
+```
+POST /internal/provision
+    Body: { name, slug, deptSlug, contactEmail, branding, features, tier, billing }
+    Action: Creates client record in master_db.clients
+            Panel URL will be: bardbox.com/{deptSlug}/{clientSlug}
+
+POST /internal/create-db
+    Body: { slug }
+    Action: Creates {slug}_db in Atlas cluster
+            Seeds collections: members, events, inquiries, conversations,
+                               payments, plans, settings, roles
+
+POST /internal/issue-jwt
+    Body: { slug, deptSlug, db, features, tier, exp }
+    Action: Signs JWT with BardBox RS256 private key
+            Stores hashed in master_db.clients.jwtHash
+            Returns raw token (used by backend middleware per request)
+
+POST /internal/gen-tracking
+    Body: { slug }
+    Action: Generates unique tracking key
+            Stores in master_db.clients.trackingKey
+
+POST /internal/send-email
+    Body: { contactEmail, slug, deptSlug, tempPassword, trackingScript }
+    Action: Sends credential email via Nodemailer
+```
+
+---
+
+## Tracking Script System
+
+BardBox does not host or build landing pages for clients. Each client gets a **unique tracking script** they embed on any landing page they own.
+
+### What Client Gets
+
+```html
+<!-- BardBox Tracking — paste in <head> of your landing page -->
+<script
+  src="https://track.bardbox.com/sdk.js"
+  data-dept="performancemarketing"
+  data-client="bizcivitas"
+  data-key="eyJhbGciOiJSUzI1NiJ9...">
+</script>
+```
+
+### What the Script Tracks Automatically
+
+```
+sdk.js captures:
+    ├── Page views + unique visitors
+    ├── Button clicks (any CTA)
+    ├── Form submissions → sent as leads to client's admin panel
+    ├── Time on page
+    ├── UTM parameters (source, medium, campaign, keyword)
+    ├── Device type (mobile / desktop)
+    └── Conversion events
+```
+
+### Lead Capture (Zero Code from Client)
+
+Client adds `data-bardbox-form="lead"` to any form on their page:
+
+```html
+<form data-bardbox-form="lead">
+    <input name="name" placeholder="Your Name" />
+    <input name="phone" placeholder="Phone" />
+    <input name="email" placeholder="Email" />
+    <button type="submit">Join Now</button>
+</form>
+```
+
+Script intercepts submit → sends to pm-backend collect endpoint → appears in client's Inquiries instantly.
+
+### Lead Flow
+
+```
+Visitor submits form on client's landing page (anywhere)
+        │
+        └── sdk.js → POST track.bardbox.com/collect/performancemarketing/bizcivitas
+                        │
+                        └── pm-backend reads dept + client slug
+                                → connects to bizcivitas_db
+                                │
+                                └── Writes to bizcivitas_db.inquiries
+                                        │
+                                        ▼
+                        bardbox.com/performancemarketing/bizcivitas/admin/inquiries
+                        WhatsApp + Email notification triggered automatically
+```
+
+---
+
+## Route Structure
+
+```
+src/app/
+│
+├── middleware.ts                   ← reads path on every request
+│                                     parses deptSlug + clientSlug
+│                                     fetches client config from pm-backend
+│                                     injects into request context
+│
+├── ceo/                            ← BardBox CEO panel (bardbox.com/ceo)
+│   ├── page.tsx                       overview (all depts summary)
+│   ├── departments/
+│   │   ├── page.tsx                   list all departments + per-dept analytics
+│   │   ├── create/page.tsx            create dept + assign allowed features
+│   │   └── [id]/page.tsx              dept detail (clients, revenue, suspend)
+│   ├── analytics/
+│   │   └── page.tsx                   revenue, growth, dept breakdown charts
+│   └── layout.tsx                     CEO auth guard
+│
+├── [deptSlug]/                     ← Department panel (bardbox.com/performancemarketing)
+│   ├── page.tsx                       client list + dept revenue
+│   ├── clients/
+│   │   ├── page.tsx                   their clients only
+│   │   ├── setup-wizard/page.tsx      onboard new client (5 steps)
+│   │   │                              creates bardbox.com/{deptSlug}/{clientSlug}
+│   │   └── [id]/page.tsx              manage client (suspend/renew/reset)
+│   ├── layout.tsx                     dept auth guard
+│   │
+│   └── [clientSlug]/               ← Client panel (bardbox.com/performancemarketing/bizcivitas)
+│       ├── admin/
+│       │   ├── inquiries/             leads from tracking script
+│       │   ├── members/               converted leads / members
+│       │   ├── conversations/
+│       │   ├── kanban/
+│       │   ├── email/
+│       │   ├── whatsapp/
+│       │   ├── forms/
+│       │   ├── scoring/
+│       │   ├── templates/
+│       │   ├── plans/
+│       │   ├── stories/
+│       │   ├── api-integrations/
+│       │   ├── settings/
+│       │   │   └── tracking/          tracking script display + stats
+│       │   └── layout.tsx          ← reads client config from middleware context
+│       │                              shows only features[] assigned to this client
+│       └── login/page.tsx          ← client login at bardbox.com/{dept}/{client}/login
+│
+└── api/
+    ├── internal/                   ← Setup Wizard automation endpoints
+    │   ├── provision/route.ts         create client record in master_db
+    │   ├── create-db/route.ts         create + seed client DB in Atlas
+    │   ├── issue-jwt/route.ts         sign RS256 license key
+    │   ├── gen-tracking/route.ts      generate tracking key
+    │   └── send-email/route.ts        email credentials to client
+    │
+    └── tracking/
+        └── collect/[deptSlug]/[clientSlug]/
+                                    ← public endpoint, receives sdk.js events
+                                       CORS open — accepts any domain
+```
+
+---
+
+## Tracking SDK Endpoint
+
+```
+POST https://track.bardbox.com/collect/:deptSlug/:clientSlug
+
+Body:
+{
+  "event": "form_submit",
+  "data": {
+    "name": "John Doe",
+    "phone": "9999999999",
+    "email": "john@example.com"
+  },
+  "meta": {
+    "page": "https://bizcivitas.in",
+    "utm_source": "google",
+    "utm_campaign": "may-offer",
+    "device": "mobile"
+  }
+}
+
+Response:
+{ "success": true }
+```
+
+CORS open — accepts requests from any domain (client's landing page can be anywhere).
+
+---
+
+## Multi-Tenant Backend Middleware
+
+One backend handles all departments and all clients. Every request to `/{deptSlug}/{clientSlug}/admin/*` goes through tenant middleware:
+
+```
+Request: GET bardbox.com/performancemarketing/bizcivitas/admin/members
+        │
+        └── Next.js middleware
+                │
+                ├── Parse path → deptSlug = "performancemarketing", clientSlug = "bizcivitas"
+                ├── Verify JWT from Authorization header
+                │       └── Confirms dept = "performancemarketing",
+                │               client = "bizcivitas", db = "bizcivitas_db"
+                ├── Open connection to bizcivitas_db (connection pooled, reused)
+                └── Pass db handle to route handler
+                        └── Handler queries bizcivitas_db.members only
+                            Client A can NEVER access Client B's DB
+                            Department A's clients cannot be seen by Department B
+```
+
+---
+
+## JWT License Key
+
+```json
+{
+  "iss": "bardbox",
+  "dept": "performancemarketing",
+  "client": "bizcivitas",
+  "db": "bizcivitas_db",
+  "panelUrl": "bardbox.com/performancemarketing/bizcivitas",
+  "tier": "standard",
+  "features": ["email", "whatsapp", "members", "forms", "tracking"],
+  "exp": "2027-01-01"
+}
+```
+
+- Signed with BardBox private key (RS256) — only BardBox can issue or revoke
+- Validated on every `/admin` request via middleware
+- Expired or revoked = client session immediately blocked
+- CEO can revoke or suspend a department (disables all clients under it)
+- Department can revoke, renew, or upgrade individual client licenses
+
+---
+
+## Client-Specific Integrations (stored in DB, not env vars)
+
+```json
+{
+  "slug": "bizcivitas",
+  "deptSlug": "performancemarketing",
+  "integrations": {
+    "whatsapp": { "apiKey": "encrypted:...", "phoneNumberId": "..." },
+    "razorpay":  { "keyId": "encrypted:...", "keySecret": "encrypted:..." },
+    "smtp":      { "host": "smtp.example.com", "user": "...", "pass": "encrypted:..." }
+  }
+}
+```
+
+---
+
+## Feature List (Master)
+
+CEO controls which features each department can offer. Departments control which features each client gets.
+
+| Feature | Description |
+|---|---|
+| `tracking` | Unique tracking script + lead capture SDK |
+| `inquiries` | Inquiry management (leads from tracking script) |
+| `members` | Member management |
+| `conversations` | Unified conversation inbox |
+| `kanban` | Kanban board for lead pipeline |
+| `email` | Email campaigns and templates |
+| `whatsapp` | WhatsApp messaging and automation |
+| `forms` | Form builder |
+| `scoring` | Engagement scoring system |
+| `templates` | Content templates |
+| `plans` | Membership plans |
+| `stories` | Success stories module |
+| `api-integrations` | Third-party API connections |
+| `plugins` | Plugin marketplace |
+
+---
+
+## White-Label Config
+
+Each client's branding is stored in master_db and fetched by Next.js middleware on every request.
+
+```json
+{
+  "slug": "bizcivitas",
+  "deptSlug": "performancemarketing",
+  "panelUrl": "bardbox.com/performancemarketing/bizcivitas",
+  "branding": {
+    "appName": "BizCivitas",
+    "logo": "https://cdn.bizcivitas.in/logo.png",
+    "primaryColor": "#000000",
+    "favicon": "https://cdn.bizcivitas.in/favicon.ico"
+  },
+  "features": ["tracking", "email", "members", "kanban"],
+  "status": "active",
+  "tier": "standard",
+  "expiresAt": "2027-01-01"
+}
+```
+
+---
+
+## Infrastructure
+
+```
+Repos (2 total — never changes regardless of client count)
+    ├── bardbox-hub                        ← Frontend (Next.js)
+    └── bardbox-hub-backend                ← Backend (Express)
+
+Deployments (2 total — never changes)
+    ├── bardbox.com                        ← serves ALL depts + ALL clients
+    └── api.bardbox.com                    ← handles ALL requests
+
+DNS (simple — no wildcard needed)
+    bardbox.com      →  frontend server IP
+    api.bardbox.com  →  backend server IP
+    track.bardbox.com → backend server IP  (tracking SDK collect endpoint)
+
+MongoDB Atlas (One Cluster)
+    ├── master_db          ← BardBox internal (departments, clients, billing)
+    ├── bizcivitas_db      ← BizCivitas client data (under PM dept)
+    ├── clientb_db         ← Client B data (under PM dept)
+    └── client1_db         ← Client 1 data (under Data Analysis dept) ...
+```
+
+---
+
+## Database Schema (master_db)
+
+### departments
+```json
+{
+  "_id": "ObjectId",
+  "name": "Performance Marketing",
+  "slug": "performancemarketing",
+  "email": "pm@bardbox.com",
+  "passwordHash": "...",
+  "features": ["tracking", "email", "whatsapp", "members", "forms"],
+  "status": "active",
+  "createdAt": "2026-05-06"
+}
+```
+
+### clients
+```json
+{
+  "_id": "ObjectId",
+  "departmentId": "ObjectId",
+  "deptSlug": "performancemarketing",
+  "name": "BizCivitas",
+  "slug": "bizcivitas",
+  "panelUrl": "bardbox.com/performancemarketing/bizcivitas",
+  "contactEmail": "admin@bizcivitas.in",
+  "branding": {
+    "appName": "BizCivitas",
+    "logo": "...",
+    "primaryColor": "#000000",
+    "favicon": "..."
+  },
+  "features": ["tracking", "email", "whatsapp", "members"],
+  "db": "bizcivitas_db",
+  "jwtHash": "hashed_license_key",
+  "trackingKey": "eyJhbGci...",
+  "integrations": {
+    "whatsapp": { "apiKey": "encrypted:...", "phoneNumberId": "..." },
+    "razorpay":  { "keyId": "encrypted:...", "keySecret": "encrypted:..." },
+    "smtp":      { "host": "...", "user": "...", "pass": "encrypted:..." }
+  },
+  "tier": "standard",
+  "billing": {
+    "amount": 50000,
+    "currency": "INR",
+    "renewsAt": "2027-01-01"
+  },
+  "status": "active",
+  "createdAt": "2026-05-06"
+}
+```
+
+### billing
+```json
+{
+  "_id": "ObjectId",
+  "clientId": "ObjectId",
+  "departmentId": "ObjectId",
+  "amount": 50000,
+  "currency": "INR",
+  "status": "paid",
+  "paidAt": "2026-05-06"
+}
+```
+
+---
+
+## CEO Dashboard Data
+
+```
+Departments View (per dept row):
+    Name             = department name (e.g. Performance Marketing)
+    Path             = bardbox.com/performancemarketing
+    Active Clients   = count of that dept's clients with status: active
+    Revenue          = sum of billing records for that dept's clients
+    Growth %         = MoM client/revenue growth for that dept
+    Status           = active / suspended
+
+Analytics View (aggregate):
+    Total Revenue    = sum of all paid billing records across all depts
+    Total Profit     = revenue - platform costs
+    Growth %         = MoM overall comparison
+```
+
+CEO does NOT see individual client details — only department-level summaries.
+
+---
+
+## Environment Variables
+
+Only 2 env files ever. Never changes per client or per department.
+
+```env
+# ── Frontend (bizcivitas-performance-marketing) ──
+NEXT_PUBLIC_API_URL=https://api.bardbox.com
+
+# ── Backend (pm-backend) ──
+MONGO_URI=mongodb+srv://...@cluster.mongodb.net
+MONGO_MASTER_DB=master_db
+BARDBOX_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----...
+SMTP_HOST=smtp.resend.com
+SMTP_USER=...
+SMTP_PASS=...
+```
+
+Client-specific keys (WhatsApp, Razorpay, SMTP) are stored encrypted in master_db.clients.integrations and fetched by the backend per request.
+
+---
+
+## Credential Delivery (on client creation)
+
+```
+Email to client:
+
+Subject: Your BardBox Platform is Ready
+
+Your panel has been set up and is ready to use.
+
+Panel URL      : https://bardbox.com/performancemarketing/bizcivitas
+Email          : admin@bizcivitas.in
+Password       : [temporary — must change on first login]
+
+Tracking Code  : paste this in <head> of your landing page
+------------------------------------------------
+<script
+  src="https://track.bardbox.com/sdk.js"
+  data-dept="performancemarketing"
+  data-client="bizcivitas"
+  data-key="eyJhbGci...">
+</script>
+------------------------------------------------
+
+If you have any issues, contact your account manager.
+```
+
+---
+
+## Build Phases
+
+### Phase 1 — Core Infrastructure
+- [ ] master_db schema setup (departments, clients, billing)
+- [ ] JWT license service (RS256 sign/verify/revoke)
+- [ ] Auth system (3 roles: CEO, Department, Client)
+- [ ] Multi-tenant middleware (path parsing → dept + client → DB routing)
+- [ ] Feature flag guard on `/{deptSlug}/{clientSlug}/admin` routes
+
+### Phase 2 — Tracking SDK
+- [ ] `sdk.js` — public tracking script
+- [ ] `/api/tracking/collect/:deptSlug/:clientSlug` — event receiver endpoint (CORS open)
+- [ ] Lead capture via `data-bardbox-form` attribute
+- [ ] UTM + device metadata capture
+- [ ] Admin panel → Settings → Tracking Code page
+
+### Phase 3 — CEO Panel
+- [ ] Department CRUD (create, suspend, edit)
+- [ ] Feature assignment to departments (which features each dept can offer)
+- [ ] Department analytics (client count, revenue, growth per dept)
+- [ ] JWT revoke / suspend controls at department level
+
+### Phase 4 — Department Panel + Setup Wizard
+- [ ] Department login + dashboard at `bardbox.com/{deptSlug}`
+- [ ] Setup Wizard (5 steps) — creates client at `bardbox.com/{deptSlug}/{clientSlug}`
+- [ ] Internal API chain (provision → create-db → issue-jwt → gen-tracking → send-email)
+- [ ] Client management (suspend, renew, reset password)
+
+### Phase 5 — White-Label Engine
+- [ ] Next.js middleware — path parsing (deptSlug + clientSlug) + config fetch
+- [ ] Branding applied at runtime (logo, colors, app name)
+- [ ] Feature sidebar renders only assigned features
+
+### Phase 6 — CEO Dashboard
+- [ ] Revenue charts
+- [ ] Profit tracking
+- [ ] Department breakdown
+- [ ] Growth metrics
+
+### Phase 7 — New Departments
+- [ ] Social Media department → `bardbox.com/socialmedia`
+- [ ] Data Analyst department → `bardbox.com/dataanalysis`
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript |
+| Styling | Tailwind CSS v4 |
+| State | Redux Toolkit |
+| Charts | Recharts |
+| Auth | JWT (jsonwebtoken, RS256) |
+| Multi-tenancy | Next.js middleware (path-based dept + client routing) |
+| Database | MongoDB Atlas |
+| Email | Nodemailer / Resend |
+| Deployment | Railway / Coolify |
+
+---
+
+## Repos
+
+| Repo | Status | Purpose |
+|---|---|---|
+| [bardbox-hub](https://github.com/BardBox/bardbox-hub) | Created (empty) | Frontend — Next.js, serves all depts + all client panels |
+| bardbox-hub-backend | To be created | Backend — Express, handles all API requests |
+
+---
+
+*Built by BardBox*

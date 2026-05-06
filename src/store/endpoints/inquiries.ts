@@ -135,6 +135,16 @@ const inquiriesApi = api.injectEndpoints({
         "InquiryList",
       ],
     }),
+
+    createInquiry: build.mutation<Inquiry, Partial<Inquiry>>({
+      query: (body) => ({
+        url: "/inquiry/add",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: { data: Inquiry }) => response.data,
+      invalidatesTags: ["InquiryList", "InquiryStats"],
+    }),
   }),
 });
 
@@ -146,6 +156,7 @@ export const {
   useDeleteInquiryMutation,
   useDeleteMultipleInquiriesMutation,
   useResetInquiryScoreMutation,
+  useCreateInquiryMutation,
 } = inquiriesApi;
 
 export type { Inquiry, InquiriesResponse, InquiryStats };
